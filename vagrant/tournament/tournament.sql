@@ -10,12 +10,11 @@ CREATE DATABASE tournament;
 \c tournament;
 
 CREATE TABLE players (
-    id SERIAL PRIMARY KEY,
+    id   SERIAL PRIMARY KEY,
     name VARCHAR(30)
 );
 
 CREATE TABLE matches (
-    winner INTEGER REFERENCES players (id),
-    loser INTEGER REFERENCES players (id),
-    PRIMARY KEY (winner, loser)
+    player_id INTEGER PRIMARY KEY REFERENCES players (id),
+    score     SMALLINT
 );
