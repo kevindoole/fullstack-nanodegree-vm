@@ -11,17 +11,32 @@ def connect():
     return psycopg2.connect("dbname=tournament")
 
 
+
 def deleteMatches():
     """Remove all the match records from the database."""
+    db = connect()
+    c = db.cursor()
+    result = c.execute("TRUNCATE TABLE matches;")
+    db.commit()
+    db.close()
 
 
 def deletePlayers():
     """Remove all the player records from the database."""
-
+    db = connect()
+    c = db.cursor()
+    result = c.execute("TRUNCATE TABLE players CASCADE;")
+    db.commit()
+    db.close()
 
 def countPlayers():
     """Returns the number of players currently registered."""
-
+    db = connect()
+    c = db.cursor()
+    c.execute("SELECT count(*) FROM players;")
+    count = c.fetchone()
+    db.close()
+    return count[0]
 
 def registerPlayer(name):
     """Adds a player to the tournament database.
@@ -32,6 +47,11 @@ def registerPlayer(name):
     Args:
       name: the player's full name (need not be unique).
     """
+    db = psycopg2.connect("dbname=tournament")
+    c = db.cursor()
+    c.execute("INSERT INTO players (name) values(%s);", (name,))
+    db.commit()
+    db.close()
 
 
 def playerStandings():
@@ -73,5 +93,3 @@ def swissPairings():
         id2: the second player's unique id
         name2: the second player's name
     """
-
-
