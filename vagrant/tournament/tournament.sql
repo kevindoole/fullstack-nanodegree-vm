@@ -18,3 +18,10 @@ CREATE TABLE matches (
     player_id INTEGER PRIMARY KEY REFERENCES players (id),
     score     SMALLINT
 );
+
+DROP VIEW matches_players;
+CREATE VIEW matches_players AS
+    SELECT id, name, score
+    FROM players
+    JOIN matches ON players.id = matches.player_id
+    ORDER BY matches.score DESC;
