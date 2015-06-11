@@ -1,7 +1,8 @@
 #!/usr/bin/env python
-# 
+#
 # tournament.py -- implementation of a Swiss-system tournament
 #
+"""Implementation of a Swiss-system tournament."""
 
 import psycopg2
 
@@ -11,25 +12,29 @@ def connect():
     return psycopg2.connect("dbname=tournament")
 
 
+def truncate_table(table, args):
+    """Remove all of a table's records from the database.
 
-def deleteMatches():
+    Args:
+        name: the table's name
+        args: additional arguments after the truncate statement
+    """
+    db = connect()
+    c = db.cursor()
+    c.execute("TRUNCATE TABLE %s %s;", (table,args,))
+    db.commit()
+    db.close()
+
+def delete_matches():
     """Remove all the match records from the database."""
-    db = connect()
-    c = db.cursor()
-    result = c.execute("TRUNCATE TABLE matches;")
-    db.commit()
-    db.close()
+    truncate_table('matches')
 
 
-def deletePlayers():
+def delete_players():
     """Remove all the player records from the database."""
-    db = connect()
-    c = db.cursor()
-    result = c.execute("TRUNCATE TABLE players CASCADE;")
-    db.commit()
-    db.close()
+    truncate_table('players', 'CASCADE')
 
-def countPlayers():
+def count_players():
     """Returns the number of players currently registered."""
     db = connect()
     c = db.cursor()
@@ -38,12 +43,12 @@ def countPlayers():
     db.close()
     return count[0]
 
-def registerPlayer(name):
+def register_player(name):
     """Adds a player to the tournament database.
-  
+
     The database assigns a unique serial id number for the player.  (This
     should be handled by your SQL database schema, not in your Python code.)
-  
+
     Args:
       name: the player's full name (need not be unique).
     """
@@ -54,7 +59,7 @@ def registerPlayer(name):
     db.close()
 
 
-def playerStandings():
+def player_standings():
     """Returns a list of the players and their win records, sorted by wins.
 
     The first entry in the list should be the player in first place, or a player
@@ -69,12 +74,22 @@ def playerStandings():
     """
     db = connect()
     c = db.cursor()
-    c.execute("SELECT p.id, p.name, (SELECT count(matches.player_id) FROM matches WHERE matches.player_id = p.id AND matches.score = '1') as wins, count(matches.player_id) FROM players AS p LEFT JOIN matches ON p.id = matches.player_id GROUP BY p.id ORDER BY wins desc;")
+    c.execute("""SELECT p.id, p.name,
+        (
+            SELECT count(matches.player_id)
+            FROM matches
+            WHERE matches.player_id = p.id
+            AND matches.score = '1'
+        ) as wins, count(matches.player_id)
+        FROM players AS p
+        LEFT JOIN matches ON p.id = matches.player_id
+        GROUP BY p.id
+        ORDER BY wins desc;""")
     standings = c.fetchall()
     db.close()
     return standings
 
-def reportMatch(winner, loser):
+def report_match(winner, loser):
     """Records the outcome of a single match between two players.
 
     Args:
@@ -83,19 +98,20 @@ def reportMatch(winner, loser):
     """
     db = connect()
     c = db.cursor()
-    c.execute("INSERT INTO matches (player_id, score) values(%s, '1'), (%s, '0');", (winner, loser,))
+    c.execute("""INSERT INTO matches (player_id, score)
+        VALUES(%s, '1'), (%s, '0');""", (winner, loser,))
     db.commit()
     db.close()
- 
- 
-def swissPairings():
+
+
+def swiss_pairings():
     """Returns a list of pairs of players for the next round of a match.
-  
+
     Assuming that there are an even number of players registered, each player
     appears exactly once in the pairings.  Each player is paired with another
     player with an equal or nearly-equal win record, that is, a player adjacent
     to him or her in the standings.
-  
+
     Returns:
       A list of tuples, each of which contains (id1, name1, id2, name2)
         id1: the first player's unique id
@@ -103,11 +119,13 @@ def swissPairings():
         id2: the second player's unique id
         name2: the second player's name
     """
-    standings = playerStandings()
+    standings = player_standings()
     pairings = []
     while len(standings):
         pairing = standings[:2]
-        [id1, name1, id2, name2] = [pairing[0][0], pairing[0][1], pairing[1][0], pairing[1][1]]
+        [id1, name1, id2, name2] = [
+            pairing[0][0], pairing[0][1], pairing[1][0], pairing[1][1]
+        ]
         pairings.append((id1, name1, id2, name2))
         del standings[:2]
     return pairings
