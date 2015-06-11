@@ -103,3 +103,11 @@ def swissPairings():
         id2: the second player's unique id
         name2: the second player's name
     """
+    standings = playerStandings()
+    pairings = []
+    while len(standings):
+        pairing = standings[:2]
+        [id1, name1, id2, name2] = [pairing[0][0], pairing[0][1], pairing[1][0], pairing[1][1]]
+        pairings.append((id1, name1, id2, name2))
+        del standings[:2]
+    return pairings
