@@ -12,7 +12,7 @@ def connect():
     return psycopg2.connect("dbname=tournament")
 
 
-def truncate_table(table, args):
+def truncate_table(table):
     """Remove all of a table's records from the database.
 
     Args:
@@ -21,7 +21,7 @@ def truncate_table(table, args):
     """
     db = connect()
     c = db.cursor()
-    c.execute("TRUNCATE TABLE %s %s;", (table,args,))
+    c.execute("TRUNCATE TABLE " + table + " CASCADE;")
     db.commit()
     db.close()
 
@@ -32,7 +32,7 @@ def delete_matches():
 
 def delete_players():
     """Remove all the player records from the database."""
-    truncate_table('players', 'CASCADE')
+    truncate_table('players')
 
 def count_players():
     """Returns the number of players currently registered."""
