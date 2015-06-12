@@ -11,6 +11,16 @@ def connect():
     """Connect to the PostgreSQL database.  Returns a database connection."""
     return psycopg2.connect("dbname=tournament")
 
+def run_query(query, query_params = None, commit = False):
+    db = connect()
+    c = db.cursor()
+    c.execute(query, query_params)
+    if ( commit == True ):
+        db.commit()
+    db.close()
+
+def insert(query, query_params):
+    run_query(query, query_params, True)
 
 def truncate_table(table):
     """Remove all of a table's records from the database.
@@ -19,11 +29,7 @@ def truncate_table(table):
         name: the table's name
         args: additional arguments after the truncate statement
     """
-    db = connect()
-    c = db.cursor()
-    c.execute("TRUNCATE TABLE " + table + " CASCADE;")
-    db.commit()
-    db.close()
+    run_query("TRUNCATE TABLE " + table + " CASCADE;", None, True)
 
 def delete_matches():
     """Remove all the match records from the database."""
@@ -52,11 +58,7 @@ def register_player(name):
     Args:
       name: the player's full name (need not be unique).
     """
-    db = connect()
-    c = db.cursor()
-    c.execute("INSERT INTO players (name) values(%s);", (name,))
-    db.commit()
-    db.close()
+    insert("INSERT INTO players (name) values(%s);", (name,))
 
 
 def player_standings():
@@ -86,12 +88,8 @@ def report_match(winner, loser):
       winner:  the id number of the player who won
       loser:  the id number of the player who lost
     """
-    db = connect()
-    c = db.cursor()
-    c.execute("""INSERT INTO matches (player_id, score)
+    insert("""INSERT INTO matches (player_id, score)
         VALUES(%s, '1'), (%s, '0');""", (winner, loser,))
-    db.commit()
-    db.close()
 
 
 def swiss_pairings():
