@@ -16,23 +16,13 @@ def run_query(query, query_params=None, commit=False):
         db.commit()
     db.close()
 
-def truncate_table(table):
-    """Remove all of a table's records from the database.
-
-    Args:
-        name: the table's name
-        args: additional arguments after the truncate statement
-    """
-    run_query("TRUNCATE TABLE " + table + " CASCADE;", None, True)
-
 def delete_matches():
     """Remove all the match records from the database."""
-    truncate_table('matches')
-
+    run_query("TRUNCATE TABLE matches;", None, True)
 
 def delete_players():
     """Remove all the player records from the database."""
-    truncate_table('players')
+    run_query("TRUNCATE TABLE players CASCADE;", None, True)
 
 def count_players():
     """Returns the number of players currently registered."""
@@ -53,7 +43,6 @@ def register_player(name):
       name: the player's full name (need not be unique).
     """
     run_query("INSERT INTO players (name) values(%s);", (name,), True)
-
 
 def player_standings():
     """Returns a list of the players and their win records, sorted by wins.
@@ -84,7 +73,6 @@ def report_match(winner, loser):
     """
     run_query("""INSERT INTO matches (player_id, score)
         VALUES(%s, '1'), (%s, '0');""", (winner, loser,), True)
-
 
 def swiss_pairings():
     """Returns a list of pairs of players for the next round of a match.
