@@ -14,7 +14,8 @@ CREATE TABLE players (
 );
 
 CREATE TABLE matches (
-    player_id INTEGER PRIMARY KEY REFERENCES players (id),
+    id        SERIAL PRIMARY KEY,
+    player_id INTEGER REFERENCES players (id),
     score     SMALLINT
 );
 
