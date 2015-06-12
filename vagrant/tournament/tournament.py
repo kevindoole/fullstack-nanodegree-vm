@@ -92,10 +92,9 @@ def swiss_pairings():
     standings = player_standings()
     pairings = []
     while len(standings):
-        pairing = standings[:2]
-        [id1, name1, id2, name2] = [
-            pairing[0][0], pairing[0][1], pairing[1][0], pairing[1][1]
+        [player1, player2] = [standings.pop(), standings.pop()]
+        [player1_id, player1_name, player2_id, player2_name] = [
+            player1[0], player1[1], player2[0], player2[1]
         ]
-        pairings.append((id1, name1, id2, name2))
-        del standings[:2]
+        pairings.append((player1_id, player1_name, player2_id, player2_name))
     return pairings
