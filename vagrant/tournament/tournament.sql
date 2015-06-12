@@ -19,9 +19,15 @@ CREATE TABLE matches (
     score     SMALLINT
 );
 
-DROP VIEW matches_players;
-CREATE VIEW matches_players AS
-    SELECT id, name, score
-    FROM players
-    JOIN matches ON players.id = matches.player_id
-    ORDER BY matches.score DESC;
+CREATE VIEW standings AS
+    SELECT p.id, p.name,
+    (
+        SELECT count(matches.player_id)
+        FROM matches
+        WHERE matches.player_id = p.id
+        AND matches.score = '1'
+    ) as wins, count(matches.player_id)
+    FROM players AS p
+    LEFT JOIN matches ON p.id = matches.player_id
+    GROUP BY p.id
+    ORDER BY wins desc;
