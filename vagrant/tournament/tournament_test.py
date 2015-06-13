@@ -84,16 +84,18 @@ def test_report_matches():
     register_player("Diane Grant")
     standings = player_standings()
     [id1, id2, id3, id4] = [row[0] for row in standings]
-    report_match(id1, id2)
-    report_match(id3, id4)
+    report_match((id1,1), (id2,0))
+    report_match((id3,1), (id4,1))
     standings = player_standings()
-    for (i, n, w, m) in standings:
+    for (i, n, p, m) in standings:
         if m != 1:
             raise ValueError("Each player should have one match recorded.")
-        if i in (id1, id3) and w != 1:
-            raise ValueError("Each match winner should have one win recorded.")
-        elif i in (id2, id4) and w != 0:
-            raise ValueError("Each match loser should have zero wins recorded.")
+        if i == id1 and p != 3:
+            raise ValueError("Each match winner should have three points recorded.")
+        if i == id2 and p != 0:
+            raise ValueError("Each match loser should have zero points recorded.")
+        elif i in (id3, id4) and p != 1:
+            raise ValueError("Each draw player should have one point recorded.")
     print "7. After a match, players have updated standings."
 
 
@@ -106,8 +108,8 @@ def test_pairings():
     register_player("Pinkie Pie")
     standings = player_standings()
     [id1, id2, id3, id4] = [row[0] for row in standings]
-    report_match(id1, id2)
-    report_match(id3, id4)
+    report_match((id1,1), (id2,0))
+    report_match((id3,1), (id4,0))
     pairings = swiss_pairings()
     if len(pairings) != 2:
         raise ValueError(

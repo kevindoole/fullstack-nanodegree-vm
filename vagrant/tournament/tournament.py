@@ -54,7 +54,7 @@ def player_standings():
       A list of tuples, each of which contains (id, name, wins, matches):
         id: the player's unique id (assigned by the database)
         name: the player's full name (as registered)
-        wins: the number of matches the player has won
+        points: the number of points the player has
         matches: the number of matches the player has played
     """
     db = connect()
@@ -64,15 +64,25 @@ def player_standings():
     db.close()
     return standings
 
-def report_match(winner, loser):
+def report_match(player1, player2):
     """Records the outcome of a single match between two players.
 
     Args:
-      winner:  the id number of the player who won
-      loser:  the id number of the player who lost
+      player1:  (id, points)
+      player2:  (id, points)
     """
-    run_query("""INSERT INTO matches (player_id, score)
-        VALUES(%s, '1'), (%s, '0');""", (winner, loser,), True)
+    # winner gets 3 points, tie both get 1, loser gets none
+    [player1_id, player2_id] = [player1[0], player2[0]]
+    if player1[1] > player2[1]:
+        [player1_points, player2_points] = [3, 0]
+    elif player1[1] == player2[1]:
+        player1_points = player2_points = 1
+    else:
+        [player1_points, player2_points] = [0, 3]
+
+    results = (player1_id, player1_points, player2_id, player2_points)
+    run_query("""INSERT INTO matches (player_id, points)
+        VALUES(%s, %s), (%s, %s);""", results, True)
 
 def swiss_pairings():
     """Returns a list of pairs of players for the next round of a match.

@@ -13,21 +13,24 @@ CREATE TABLE players (
     name VARCHAR(30)
 );
 
+CREATE TABLE byes (
+    player_id INTEGER PRIMARY KEY REFERENCES players (id)
+);
+
 CREATE TABLE matches (
     id        SERIAL PRIMARY KEY,
     player_id INTEGER REFERENCES players (id),
-    score     SMALLINT
+    points    SMALLINT
 );
 
 CREATE VIEW standings AS
     SELECT p.id, p.name,
     (
-        SELECT count(matches.player_id)
+        SELECT COALESCE(sum(matches.points),0)
         FROM matches
         WHERE matches.player_id = p.id
-        AND matches.score = '1'
-    ) as wins, count(matches.player_id)
+    ) as points, count(matches.player_id)
     FROM players AS p
     LEFT JOIN matches ON p.id = matches.player_id
     GROUP BY p.id
-    ORDER BY wins desc;
+    ORDER BY points desc;
