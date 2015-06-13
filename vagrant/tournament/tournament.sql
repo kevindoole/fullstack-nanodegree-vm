@@ -17,7 +17,7 @@ CREATE TABLE byes (
     player_id INTEGER PRIMARY KEY REFERENCES players (id)
 );
 
-CREATE TABLE matches (
+CREATE TABLE match_points (
     id        SERIAL PRIMARY KEY,
     player_id INTEGER REFERENCES players (id),
     points    SMALLINT
@@ -26,11 +26,20 @@ CREATE TABLE matches (
 CREATE VIEW standings AS
     SELECT p.id, p.name,
     (
-        SELECT COALESCE(sum(matches.points),0)
-        FROM matches
-        WHERE matches.player_id = p.id
-    ) as points, count(matches.player_id)
+        SELECT COALESCE(sum(match_points.points),0)
+        FROM match_points
+        WHERE match_points.player_id = p.id
+    ) as points, count(match_points.player_id)
     FROM players AS p
-    LEFT JOIN matches ON p.id = matches.player_id
+    LEFT JOIN match_points ON p.id = match_points.player_id
     GROUP BY p.id
     ORDER BY points desc;
+
+CREATE VIEW last_place_without_bye AS
+    SELECT id
+    FROM standings
+    LEFT JOIN byes ON player_id = id
+    GROUP BY id, points
+    HAVING count(byes) = 0
+    ORDER BY points
+    LIMIT 1;

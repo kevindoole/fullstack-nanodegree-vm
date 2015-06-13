@@ -1,18 +1,18 @@
 from tournament import *
 
 def test_delete_matches():
-    delete_matches()
+    delete_match_points()
     print "1. Old matches can be deleted."
 
 
 def test_delete():
-    delete_matches()
+    delete_match_points()
     delete_players()
     print "2. Player records can be deleted."
 
 
 def test_count():
-    delete_matches()
+    delete_match_points()
     delete_players()
     c = count_players()
     if c == '0':
@@ -24,7 +24,7 @@ def test_count():
 
 
 def test_register():
-    delete_matches()
+    delete_match_points()
     delete_players()
     register_player("Chandra Nalaar")
     c = count_players()
@@ -35,7 +35,7 @@ def test_register():
 
 
 def test_register_count_delete():
-    delete_matches()
+    delete_match_points()
     delete_players()
     register_player("Markov Chaney")
     register_player("Joe Malik")
@@ -53,7 +53,7 @@ def test_register_count_delete():
 
 
 def test_standings_before_matches():
-    delete_matches()
+    delete_match_points()
     delete_players()
     register_player("Melpomene Murray")
     register_player("Randy Schwartz")
@@ -76,7 +76,7 @@ def test_standings_before_matches():
 
 
 def test_report_matches():
-    delete_matches()
+    delete_match_points()
     delete_players()
     register_player("Bruno Walton")
     register_player("Boots O'Neal")
@@ -100,7 +100,7 @@ def test_report_matches():
 
 
 def test_pairings():
-    delete_matches()
+    delete_match_points()
     delete_players()
     register_player("Twilight Sparkle")
     register_player("Fluttershy")
@@ -122,6 +122,45 @@ def test_pairings():
             "After one match, players with one win should be paired.")
     print "8. After one match, players with one win are paired."
 
+def test_byes():
+    delete_match_points()
+    delete_players()
+    register_player("Bruno Walton")
+    register_player("Boots O'Neal")
+    register_player("Cathy Burton")
+    standings = player_standings()
+    [id1, id2, id3] = [row[0] for row in standings]
+    report_match((id1,1), (id2,1))
+    pairings = swiss_pairings()
+    if len(pairings) != 1:
+        raise ValueError(
+            "There should only be pairings for an even number of players")
+    standings = player_standings()
+    for (i, n, p, m) in standings:
+        if i == id3 and p != 3:
+            raise ValueError(
+                "The lowest rank player in round one should get a bye.")
+        if i in (id1, id2) and p != 1:
+            raise ValueError("Tied players should have 1 point each")
+    try:
+        bye(id3)
+    except psycopg2.IntegrityError:
+        pass
+    else:
+        raise ValueError("Players should be able to have more than one bye.")
+    print "9. The lowest ranked player gets a bye for 3 points."
+
+def test_bye_fallback():
+    standings = player_standings()
+    [bye_player_id, id2, id3] = [row[0] for row in standings]
+    report_match((id2,2), (id3,1))
+    report_match((id2,1), (id3,2))
+    pairings = swiss_pairings()
+    [(pid1, pname1, pid2, pname2)] = pairings
+    if bye_player_id not in (pid1, pid2):
+        raise ValueError("A player cannot have a bye twice.")
+    print "10. No player can have more than one bye."
+
 
 if __name__ == '__main__':
     test_delete_matches()
@@ -132,6 +171,8 @@ if __name__ == '__main__':
     test_standings_before_matches()
     test_report_matches()
     test_pairings()
+    test_byes()
+    test_bye_fallback()
     print "Success!  All tests pass!"
 
 

@@ -16,9 +16,9 @@ def run_query(query, query_params=None, commit=False):
         db.commit()
     db.close()
 
-def delete_matches():
+def delete_match_points():
     """Remove all the match records from the database."""
-    run_query("TRUNCATE TABLE matches;", None, True)
+    run_query("TRUNCATE TABLE match_points;", None, True)
 
 def delete_players():
     """Remove all the player records from the database."""
@@ -81,8 +81,20 @@ def report_match(player1, player2):
         [player1_points, player2_points] = [0, 3]
 
     results = (player1_id, player1_points, player2_id, player2_points)
-    run_query("""INSERT INTO matches (player_id, points)
+    run_query("""INSERT INTO match_points (player_id, points)
         VALUES(%s, %s), (%s, %s);""", results, True)
+
+def which_player_can_bye(standings):
+    db = connect()
+    c = db.cursor()
+    c.execute("SELECT id FROM last_place_without_bye;")
+    bye_player = c.fetchone()
+    db.close()
+    bye_player_id = bye_player[0]
+    i = 0
+    for i, (id, n, p, m) in enumerate(standings):
+        if id == bye_player_id : return i
+        i+=1
 
 def swiss_pairings():
     """Returns a list of pairs of players for the next round of a match.
@@ -102,9 +114,20 @@ def swiss_pairings():
     standings = player_standings()
     pairings = []
     while len(standings):
-        [player1, player2] = [standings.pop(), standings.pop()]
+        if len(standings) % 2 == 1:
+            bye_player_key = which_player_can_bye(standings)
+            player = standings.pop(bye_player_key)
+            bye(player[0])
+            continue
+
+        [player1, player2] = [standings.pop(0), standings.pop(0)]
         [player1_id, player1_name, player2_id, player2_name] = [
             player1[0], player1[1], player2[0], player2[1]
         ]
         pairings.append((player1_id, player1_name, player2_id, player2_name))
     return pairings
+
+def bye(player_id):
+    run_query("INSERT INTO byes values(%s);", (player_id,), True)
+    run_query("""INSERT INTO match_points (player_id, points)
+        VALUES(%s, %s);""", (player_id, 3), True)
