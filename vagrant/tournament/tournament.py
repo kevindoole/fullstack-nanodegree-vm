@@ -71,7 +71,7 @@ def report_match(player1, player2):
       player1:  (id, points)
       player2:  (id, points)
     """
-    # winner gets 3 points, tie both get 1, loser gets none
+    # winner gets 3 points, draw both get 1, loser gets none
     [player1_id, player2_id] = [player1[0], player2[0]]
     if player1[1] > player2[1]:
         [player1_points, player2_points] = [3, 0]
@@ -80,7 +80,8 @@ def report_match(player1, player2):
     else:
         [player1_points, player2_points] = [0, 3]
 
-    results = (player1_id, player1_points, player2_id, player2_id, player2_points, player1_id)
+    results = (player1_id, player1_points, player2_id, player2_id,
+                player2_points, player1_id)
     run_query("""INSERT INTO match_points (player_id, points, opponent_id)
         VALUES(%s, %s, %s), (%s, %s, %s);""", results, True)
 
@@ -93,7 +94,8 @@ def which_player_can_bye(standings):
     bye_player_id = bye_player[0]
     i = 0
     for i, (id, n, p, m, omw) in enumerate(standings):
-        if id == bye_player_id : return i
+        if id == bye_player_id:
+            return i
         i+=1
 
 def swiss_pairings():
