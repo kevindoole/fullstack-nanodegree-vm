@@ -63,9 +63,9 @@ def test_standings_before_matches():
                          "they have played any matches.")
     elif len(standings) > 2:
         raise ValueError("Only registered players should appear in standings.")
-    if len(standings[0]) != 4:
-        raise ValueError("Each player_standings row should have four columns.")
-    [(id1, name1, wins1, matches1), (id2, name2, wins2, matches2)] = standings
+    if len(standings[0]) != 5:
+        raise ValueError("Each player_standings row should have five columns.")
+    [(id1, name1, wins1, matches1, omw1), (id2, name2, wins2, matches2, omw2)] = standings
     if matches1 != 0 or matches2 != 0 or wins1 != 0 or wins2 != 0:
         raise ValueError(
             "Newly registered players should have no matches or wins.")
@@ -87,7 +87,7 @@ def test_report_matches():
     report_match((id1,1), (id2,0))
     report_match((id3,1), (id4,1))
     standings = player_standings()
-    for (i, n, p, m) in standings:
+    for (i, n, p, m, omw) in standings:
         if m != 1:
             raise ValueError("Each player should have one match recorded.")
         if i == id1 and p != 3:
@@ -136,7 +136,7 @@ def test_byes():
         raise ValueError(
             "There should only be pairings for an even number of players")
     standings = player_standings()
-    for (i, n, p, m) in standings:
+    for (i, n, p, m, omw) in standings:
         if i == id3 and p != 3:
             raise ValueError(
                 "The lowest rank player in round one should get a bye.")
@@ -161,6 +161,27 @@ def test_bye_fallback():
         raise ValueError("A player cannot have a bye twice.")
     print "10. No player can have more than one bye."
 
+def test_opponent_match_wins_count():
+    delete_match_points()
+    delete_players()
+    register_player("Twilight Sparkle")
+    register_player("Fluttershy")
+    register_player("Applejack")
+    standings = player_standings()
+    [id1, id2, id3] = [row[0] for row in standings]
+    report_match((id1,1), (id2,0))
+    report_match((id1,1), (id3,0))
+    report_match((id1,1), (id2,0))
+    standings = player_standings()
+    for (i, n, p, m, omw) in standings:
+        if i == id1 and omw != 0:
+            raise ValueError("id1 should have 0 omw.")
+        if i == id2 and omw != 3:
+            raise ValueError("id2 should have 3 omw.")
+        if i == id3 and omw != 3:
+            raise ValueError("id3 should have 3 omw.")
+    print "11. Opponent match wins accumulate correctly."
+
 def test_opponent_match_wins_rank():
     delete_match_points()
     delete_players()
@@ -168,34 +189,21 @@ def test_opponent_match_wins_rank():
     register_player("Fluttershy")
     register_player("Applejack")
     register_player("Pinkie Pie")
-    register_player("Burt Reynolds")
-    register_player("Dini Petty")
     standings = player_standings()
-    [id1, id2, id3, id4, id5, id6] = [row[0] for row in standings]
-    report_match((id1,1), (id2,0)) #id1 3p, 0omw
-    report_match((id2,1), (id4,0)) #id2 3p, 0omw
-    report_match((id3,1), (id4,0)) #id3 3p, 0omw
-    report_match((id5,1), (id6,0)) #id5 3p, 0omw
-    report_match((id6,1), (id1,0)) #id6 3p, 1omw
-    report_match((id4,1), (id1,0)) #id4 3p, 1omw
-    report_match((id6,1), (id1,0)) #id6 6p, 2omw
-    standings = player_standings()
-    print standings
+    [id1, id2, id3, id4] = [row[0] for row in standings]
+    report_match((id1,1), (id3,0)) # id1 3p, 0omw   |   id2 0p, 1omw
+    report_match((id2,1), (id4,1))
+    report_match((id3,1), (id1,1))
+    report_match((id1,1), (id3,0))
+
     pairings = swiss_pairings()
-    [(pid1, pname1, pid2, pname2),(pid3, pname3, pid4, pname4),
-                                    (pid5, pname5, pid6, pname6)] = pairings
-    correct_pairs = set([
-        frozenset([id4, id6]), frozenset([id1, id2]), frozenset([id3, id5])
-    ])
-    actual_pairs = set([
-        frozenset([pid1, pid2]), frozenset([pid3, pid4]), frozenset([pid5, pid6])
-    ])
-    print correct_pairs
-    print actual_pairs
+    [(pid1, pname1, pid2, pname2),(pid3, pname3, pid4, pname4)] = pairings
+    correct_pairs = set([frozenset([id1, id3]),frozenset([id2, id4])])
+    actual_pairs = set([frozenset([pid1, pid2]), frozenset([pid3, pid4])])
     if correct_pairs != actual_pairs:
         raise ValueError(
             "Tied players should be ranked by opponent match wins.")
-    print "11. Tied players should be ranked by opponent match wins."
+    print "12. Tied players should be ranked by opponent match wins."
 
 if __name__ == '__main__':
     test_delete_matches()
@@ -208,6 +216,7 @@ if __name__ == '__main__':
     test_pairings()
     test_byes()
     test_bye_fallback()
+    test_opponent_match_wins_count()
     test_opponent_match_wins_rank()
     print "Success!  All tests pass!"
 

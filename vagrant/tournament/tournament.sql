@@ -5,6 +5,8 @@
 --
 -- You can write comments in this file by starting them with two dashes, like
 -- these lines here.
+DROP DATABASE tournament;
+CREATE DATABASE tournament;
 
 \c tournament;
 
@@ -18,22 +20,26 @@ CREATE TABLE byes (
 );
 
 CREATE TABLE match_points (
-    id        SERIAL PRIMARY KEY,
-    player_id INTEGER REFERENCES players (id),
-    points    SMALLINT
+    id          SERIAL PRIMARY KEY,
+    player_id   INTEGER REFERENCES players (id),
+    opponent_id INTEGER REFERENCES players (id),
+    points      SMALLINT
 );
 
 CREATE VIEW standings AS
-    SELECT p.id, p.name,
-    (
-        SELECT COALESCE(sum(match_points.points),0)
-        FROM match_points
-        WHERE match_points.player_id = p.id
-    ) as points, count(match_points.player_id)
+    SELECT p.id, p.name, COALESCE(sum(match_points.points),0) as points, count(match_points.player_id),
+        (
+            SELECT count(player_id)
+                FROM match_points
+                WHERE points = 3 AND player_id IN (
+                    SELECT opponent_id FROM match_points WHERE player_id = p.id
+                )
+        ) AS omw
     FROM players AS p
     LEFT JOIN match_points ON p.id = match_points.player_id
     GROUP BY p.id
-    ORDER BY points desc;
+    ORDER BY points desc, omw desc;
+
 
 CREATE VIEW last_place_without_bye AS
     SELECT id

@@ -80,9 +80,9 @@ def report_match(player1, player2):
     else:
         [player1_points, player2_points] = [0, 3]
 
-    results = (player1_id, player1_points, player2_id, player2_points)
-    run_query("""INSERT INTO match_points (player_id, points)
-        VALUES(%s, %s), (%s, %s);""", results, True)
+    results = (player1_id, player1_points, player2_id, player2_id, player2_points, player1_id)
+    run_query("""INSERT INTO match_points (player_id, points, opponent_id)
+        VALUES(%s, %s, %s), (%s, %s, %s);""", results, True)
 
 def which_player_can_bye(standings):
     db = connect()
@@ -92,7 +92,7 @@ def which_player_can_bye(standings):
     db.close()
     bye_player_id = bye_player[0]
     i = 0
-    for i, (id, n, p, m) in enumerate(standings):
+    for i, (id, n, p, m, omw) in enumerate(standings):
         if id == bye_player_id : return i
         i+=1
 
