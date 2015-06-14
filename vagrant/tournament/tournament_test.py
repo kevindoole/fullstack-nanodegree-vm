@@ -1,19 +1,23 @@
 from tournament import *
 
+def delete_matches_players():
+    delete_match_points()
+    delete_players()
+
 def test_delete_matches():
     delete_match_points()
     print "1. Old matches can be deleted."
 
+def register_players(count):
+    [register_player("player" + `i`) for i in range(count)]
 
 def test_delete():
-    delete_match_points()
-    delete_players()
+    delete_matches_players()
     print "2. Player records can be deleted."
 
 
 def test_count():
-    delete_match_points()
-    delete_players()
+    delete_matches_players()
     c = count_players()
     if c == '0':
         raise TypeError(
@@ -24,9 +28,8 @@ def test_count():
 
 
 def test_register():
-    delete_match_points()
-    delete_players()
-    register_player("Chandra Nalaar")
+    delete_matches_players()
+    register_players(1)
     c = count_players()
     if c != 1:
         raise ValueError(
@@ -35,12 +38,8 @@ def test_register():
 
 
 def test_register_count_delete():
-    delete_match_points()
-    delete_players()
-    register_player("Markov Chaney")
-    register_player("Joe Malik")
-    register_player("Mao Tsu-hsi")
-    register_player("Atlanta Hope")
+    delete_matches_players()
+    register_players(4)
     c = count_players()
     if c != 4:
         raise ValueError(
@@ -53,10 +52,8 @@ def test_register_count_delete():
 
 
 def test_standings_before_matches():
-    delete_match_points()
-    delete_players()
-    register_player("Melpomene Murray")
-    register_player("Randy Schwartz")
+    delete_matches_players()
+    register_players(2)
     standings = player_standings()
     if len(standings) < 2:
         raise ValueError("Players should appear in player_standings even before "
@@ -69,19 +66,15 @@ def test_standings_before_matches():
     if matches1 != 0 or matches2 != 0 or wins1 != 0 or wins2 != 0:
         raise ValueError(
             "Newly registered players should have no matches or wins.")
-    if set([name1, name2]) != set(["Melpomene Murray", "Randy Schwartz"]):
+    if set([name1, name2]) != set(["player0", "player1"]):
         raise ValueError("Registered players' names should appear in standings, "
                          "even if they have no matches played.")
     print "6. Newly registered players appear in the standings with no matches."
 
 
 def test_report_matches():
-    delete_match_points()
-    delete_players()
-    register_player("Bruno Walton")
-    register_player("Boots O'Neal")
-    register_player("Cathy Burton")
-    register_player("Diane Grant")
+    delete_matches_players()
+    register_players(4)
     standings = player_standings()
     [id1, id2, id3, id4] = [row[0] for row in standings]
     report_match((id1,1), (id2,0))
@@ -100,12 +93,8 @@ def test_report_matches():
 
 
 def test_pairings():
-    delete_match_points()
-    delete_players()
-    register_player("Twilight Sparkle")
-    register_player("Fluttershy")
-    register_player("Applejack")
-    register_player("Pinkie Pie")
+    delete_matches_players()
+    register_players(4)
     standings = player_standings()
     [id1, id2, id3, id4] = [row[0] for row in standings]
     report_match((id1,1), (id2,0))
@@ -123,11 +112,8 @@ def test_pairings():
     print "8. After one match, players with one win are paired."
 
 def test_byes():
-    delete_match_points()
-    delete_players()
-    register_player("Bruno Walton")
-    register_player("Boots O'Neal")
-    register_player("Cathy Burton")
+    delete_matches_players()
+    register_players(3)
     standings = player_standings()
     [id1, id2, id3] = [row[0] for row in standings]
     report_match((id1,1), (id2,1))
@@ -162,11 +148,8 @@ def test_bye_fallback():
     print "10. No player can have more than one bye."
 
 def test_opponent_match_wins_count():
-    delete_match_points()
-    delete_players()
-    register_player("Twilight Sparkle")
-    register_player("Fluttershy")
-    register_player("Applejack")
+    delete_matches_players()
+    register_players(3)
     standings = player_standings()
     [id1, id2, id3] = [row[0] for row in standings]
     report_match((id1,1), (id2,0))
@@ -183,12 +166,8 @@ def test_opponent_match_wins_count():
     print "11. Opponent match wins accumulate correctly."
 
 def test_opponent_match_wins_rank():
-    delete_match_points()
-    delete_players()
-    register_player("Twilight Sparkle")
-    register_player("Fluttershy")
-    register_player("Applejack")
-    register_player("Pinkie Pie")
+    delete_matches_players()
+    register_players(4)
     standings = player_standings()
     [id1, id2, id3, id4] = [row[0] for row in standings]
     report_match((id1,1), (id3,0)) # id1 3p, 0omw   |   id2 0p, 1omw
