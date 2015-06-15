@@ -5,61 +5,55 @@ import psycopg2
 
 def connect():
     """Connect to the PostgreSQL database.  Returns a database connection."""
-    return psycopg2.connect("dbname=tournament")
+    db = psycopg2.connect("dbname=tournament")
+    cursor = db.cursor()
+    return [db, cursor]
 
-def run_query(query, query_params=None, commit=False):
+def commit_query(query, query_params=None):
     """Connect to the DB and run a query."""
-    db = connect()
-    c = db.cursor()
+    [db, c] = connect()
     c.execute(query, query_params)
-    if commit == True:
-        db.commit()
+    db.commit()
     db.close()
 
 def delete_match_points():
     """Remove all the match records from the database."""
-    run_query("TRUNCATE TABLE match_points;", None, True)
+    commit_query("TRUNCATE TABLE match_points;")
 
 def delete_players():
     """Remove all the player records from the database."""
-    run_query("TRUNCATE TABLE players CASCADE;", None, True)
+    commit_query("TRUNCATE TABLE players CASCADE;")
 
 def count_players():
-    """Returns the number of players currently registered."""
-    db = connect()
-    c = db.cursor()
+    """Returns the number of players currently registered for all tournaments."""
+    [db, c] = connect()
     c.execute("SELECT count(*) FROM players;")
     count = c.fetchone()
     db.close()
     return count[0]
 
-def new_tournament():
-    run_query("INSERT into tournaments DEFAULT VALUES;", None, commit=True)
-
-def latest_record(table):
-    db = connect()
-    c = db.cursor()
-    c.execute("SELECT id FROM " + table + " ORDER BY id desc LIMIT 1;")
-    record = c.fetchone()
-    db.close()
-    return record[0]
-
-
 class Tournament:
 
     def __init__(self):
-        new_tournament()
-        self.id = latest_record('tournaments')
+        [db, c] = connect()
+        c.execute("INSERT into tournaments DEFAULT VALUES RETURNING id;")
+        new_tournament_id = c.fetchone()[0]
+        db.commit()
+        db.close()
+        self.id = new_tournament_id
 
     def register_player(self, name):
         """Adds a player to the tournament database.
         Args:
           name: the player's full name (need not be unique).
         """
-        run_query("INSERT INTO players (name) values(%s);", (name,), True)
-        player_id = latest_record('players')
-        run_query("""INSERT INTO players_tournaments (player_id, tournament_id)
-                        values(%s,%s);""", (player_id,self.id), True)
+        [db, c] = connect()
+        c.execute("INSERT INTO players (name) VALUES(%s) RETURNING id;", (name,))
+        player_id = c.fetchone()[0]
+        c.execute("""INSERT INTO players_tournaments (player_id, tournament_id)
+                        VALUES(%s,%s);""", (player_id,self.id))
+        db.commit()
+        db.close()
 
     def player_standings(self):
         """Returns a list of the players and their win records, sorted by wins.
@@ -74,8 +68,7 @@ class Tournament:
             points: the number of points the player has
             matches: the number of matches the player has played
         """
-        db = connect()
-        c = db.cursor()
+        [db, c] = connect()
         c.execute("""SELECT * FROM standings WHERE tournament_id = %s""",
             (self.id,))
         standings = c.fetchall()
@@ -100,12 +93,11 @@ class Tournament:
 
         results = (player1_id, player1_points, player2_id, self.id, player2_id,
                     player2_points, player1_id, self.id)
-        run_query("""INSERT INTO match_points (player_id, points, opponent_id,
-            tournament_id) VALUES(%s, %s, %s, %s), (%s, %s, %s, %s);""", results, True)
+        commit_query("""INSERT INTO match_points (player_id, points, opponent_id,
+            tournament_id) VALUES(%s, %s, %s, %s), (%s, %s, %s, %s);""", results)
 
     def which_player_can_bye(self, standings):
-        db = connect()
-        c = db.cursor()
+        [db, c] = connect()
         c.execute("SELECT id FROM last_place_without_bye WHERE tournament_id = %s;", (self.id,))
         bye_player = c.fetchone()
         db.close()
@@ -117,8 +109,7 @@ class Tournament:
             i+=1
 
     def player_opponents(self, player_id):
-        db = connect()
-        c = db.cursor()
+        [db, c] = connect()
         c.execute("SELECT opponent_id FROM match_points WHERE player_id = %s AND tournament_id = %s",
             (player_id, self.id))
         opponents = c.fetchall()
@@ -167,6 +158,8 @@ class Tournament:
         return pairings
 
     def bye(self, player_id):
-        run_query("INSERT INTO byes values(%s, %s);", (player_id, self.id), True)
-        run_query("""INSERT INTO match_points (player_id, points)
-            VALUES(%s, %s);""", (player_id, 3), True)
+        [db, c] = connect()
+        c.execute("INSERT INTO byes VALUES(%s, %s);", (player_id, self.id))
+        c.execute("INSERT INTO match_points (player_id, points) VALUES(%s, %s);", (player_id, 3))
+        db.commit()
+        db.close()

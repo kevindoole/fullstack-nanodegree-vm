@@ -52,7 +52,7 @@ CREATE VIEW standings AS
     LEFT JOIN match_points ON p.id = match_points.player_id
     LEFT JOIN players_tournaments ON p.id = players_tournaments.player_id
     GROUP BY players_tournaments.tournament_id, p.id
-    ORDER BY points desc, omw desc;
+    ORDER BY points DESC, omw DESC;
 
 
 CREATE VIEW last_place_without_bye AS

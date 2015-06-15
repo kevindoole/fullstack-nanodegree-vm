@@ -178,10 +178,10 @@ def test_opponent_match_wins_rank():
     tournament.report_match((id5,1), (id6,0))
 
     # Fudge the numbers a bit to get the pairings we need to test.
-    run_query("UPDATE match_points SET points = 0 WHERE player_id = %s",
-        query_params=(id3,), commit=True)
-    run_query("UPDATE match_points SET opponent_id = %s WHERE player_id in (%s,%s)",
-        query_params=(id6,id3,id4), commit=True)
+    commit_query("UPDATE match_points SET points = 0 WHERE player_id = %s",
+        query_params=(id3,))
+    commit_query("UPDATE match_points SET opponent_id = %s WHERE player_id in (%s,%s)",
+        query_params=(id6,id3,id4))
 
     pairings = tournament.swiss_pairings()
     [(pid1, pname1, pid2, pname2),
