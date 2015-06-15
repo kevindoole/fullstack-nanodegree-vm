@@ -15,15 +15,28 @@ CREATE TABLE players (
     name VARCHAR(30)
 );
 
+CREATE TABLE tournaments (
+    id SERIAL PRIMARY KEY
+);
+
+CREATE TABLE players_tournaments (
+    player_id     INTEGER REFERENCES players (id),
+    tournament_id INTEGER REFERENCES tournaments (id),
+    PRIMARY KEY   (player_id, tournament_id)
+);
+
 CREATE TABLE byes (
-    player_id INTEGER PRIMARY KEY REFERENCES players (id)
+    player_id     INTEGER REFERENCES players (id),
+    tournament_id INTEGER REFERENCES tournaments (id),
+    PRIMARY KEY   (player_id, tournament_id)
 );
 
 CREATE TABLE match_points (
-    id          SERIAL PRIMARY KEY,
-    player_id   INTEGER REFERENCES players (id),
-    opponent_id INTEGER REFERENCES players (id),
-    points      SMALLINT
+    id            SERIAL PRIMARY KEY,
+    tournament_id INTEGER REFERENCES tournaments (id),
+    player_id     INTEGER REFERENCES players (id),
+    opponent_id   INTEGER REFERENCES players (id),
+    points        SMALLINT
 );
 
 CREATE VIEW standings AS
@@ -34,18 +47,19 @@ CREATE VIEW standings AS
                 WHERE points = 3 AND player_id IN (
                     SELECT opponent_id FROM match_points WHERE player_id = p.id
                 )
-        ) AS omw
+        ) AS omw, players_tournaments.tournament_id
     FROM players AS p
     LEFT JOIN match_points ON p.id = match_points.player_id
-    GROUP BY p.id
+    LEFT JOIN players_tournaments ON p.id = players_tournaments.player_id
+    GROUP BY players_tournaments.tournament_id, p.id
     ORDER BY points desc, omw desc;
 
 
 CREATE VIEW last_place_without_bye AS
-    SELECT id
+    SELECT id, standings.tournament_id
     FROM standings
-    LEFT JOIN byes ON player_id = id
-    GROUP BY id, points
+    LEFT JOIN byes ON player_id = id AND byes.tournament_id = standings.tournament_id
+    GROUP BY standings.tournament_id, id, points
     HAVING count(byes) = 0
     ORDER BY points
     LIMIT 1;
