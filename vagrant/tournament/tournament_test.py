@@ -213,6 +213,40 @@ def test_avoid_rematches():
             "Players should not play one another more than one time.")
     print "13. Rematches are avoided."
 
+def test_multiple_tournaments():
+    t1 = Tournament();
+    t2 = Tournament();
+    if t1.id == t2.id:
+        raise ValueError("Tournaments cannot have the same id.")
+    t1.register_player("Dini Petty")
+    t1.register_player("Yasmeen Bleeth")
+    t2.register_player("Burt Reynolds")
+    t2.register_player("Ralph Nader")
+    t1_standings = t1.player_standings()
+    t2_standings = t2.player_standings()
+    if len(t1_standings) != 2:
+        raise ValueError("There should be 2 players in t1.")
+    if len(t2_standings) != 2:
+        raise ValueError("There should be 2 players in t2.")
+    # for (i, n, p, m, omw, t_id) in standings:
+    t1_names = [row[1] for row in t1_standings]
+    t2_names = [row[1] for row in t2_standings]
+    if "Dini Petty" not in t1_names or "Yasmeen Bleeth" not in t1_names:
+        raise ValueError("T1 does not have the correct players.")
+    if "Burt Reynolds" not in t2_names or "Ralph Nader" not in t2_names:
+        raise ValueError("T2 does not have the correct players.")
+    print "14. Multiple tournaments can have separate players."
+
+def test_multiple_tournaments_have_distinct_pairings():
+    t1 = Tournament();
+    t2 = Tournament();
+    [t1.register_player("player" + `i`) for i in range(8)]
+    [t2.register_player("player" + `i`) for i in range(16)]
+    if len(t1.swiss_pairings()) != 4:
+        raise ValueError("T1 should have 4 pairings.")
+    if len(t2.swiss_pairings()) != 8:
+        raise ValueError("T2 should have 8 pairings.")
+    print "15. Multiple tournaments have distinct standings."
 
 if __name__ == '__main__':
     test_delete_matches()
@@ -228,6 +262,8 @@ if __name__ == '__main__':
     test_opponent_match_wins_count()
     test_opponent_match_wins_rank()
     test_avoid_rematches()
+    test_multiple_tournaments()
+    test_multiple_tournaments_have_distinct_pairings
     print "Success!  All tests pass!"
 
 
