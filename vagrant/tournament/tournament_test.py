@@ -167,22 +167,50 @@ def test_opponent_match_wins_count():
 
 def test_opponent_match_wins_rank():
     delete_matches_players()
-    register_players(4)
+    register_players(6)
     standings = player_standings()
-    [id1, id2, id3, id4] = [row[0] for row in standings]
-    report_match((id1,1), (id3,0)) # id1 3p, 0omw   |   id2 0p, 1omw
-    report_match((id2,1), (id4,1))
-    report_match((id3,1), (id1,1))
-    report_match((id1,1), (id3,0))
+    [id1, id2, id3, id4, id5, id6] = [row[0] for row in standings]
+
+    report_match((id1,1), (id2,0))
+    report_match((id3,1), (id4,0))
+    report_match((id5,1), (id6,0))
+
+    # Fudge the numbers a bit to get the pairings we need to test.
+    run_query("UPDATE match_points SET points = 0 WHERE player_id = %s",
+        query_params=(id3,), commit=True)
+    run_query("UPDATE match_points SET opponent_id = %s WHERE player_id in (%s,%s)",
+        query_params=(id6,id3,id4), commit=True)
 
     pairings = swiss_pairings()
-    [(pid1, pname1, pid2, pname2),(pid3, pname3, pid4, pname4)] = pairings
-    correct_pairs = set([frozenset([id1, id3]),frozenset([id2, id4])])
-    actual_pairs = set([frozenset([pid1, pid2]), frozenset([pid3, pid4])])
+    [(pid1, pname1, pid2, pname2),
+        (pid3, pname3, pid4, pname4),
+        (pid5, pname5, pid6, pname6)] = pairings
+    correct_pairs = set([
+        frozenset([id1, id5]),frozenset([id2, id6]),frozenset([id3, id4])
+    ])
+    actual_pairs = set([
+        frozenset([pid1, pid2]), frozenset([pid3, pid4]), frozenset([pid5, pid6]),
+    ])
     if correct_pairs != actual_pairs:
         raise ValueError(
             "Tied players should be ranked by opponent match wins.")
     print "12. Tied players should be ranked by opponent match wins."
+
+def test_avoid_rematches():
+    delete_matches_players()
+    register_players(4)
+    [id1, id2, id3, id4] = [row[0] for row in player_standings()]
+    report_match((id1,1), (id2,0))
+    opponents = player_opponents(id1)
+    if id2 not in opponents:
+        raise ValueError("Opponents should be recorded.")
+    pairings = swiss_pairings()
+    [(pid1, pname1, pid2, pname2),(pid3, pname3, pid4, pname4)] = pairings
+    if pid1 == id1 and pid2 == id2:
+        raise ValueError(
+            "Players should not play one another more than one time.")
+    print "12. Rematches are avoided."
+
 
 if __name__ == '__main__':
     test_delete_matches()
@@ -197,6 +225,7 @@ if __name__ == '__main__':
     test_bye_fallback()
     test_opponent_match_wins_count()
     test_opponent_match_wins_rank()
+    test_avoid_rematches()
     print "Success!  All tests pass!"
 
 

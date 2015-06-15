@@ -98,6 +98,16 @@ def which_player_can_bye(standings):
             return i
         i+=1
 
+def player_opponents(player_id):
+    db = connect()
+    c = db.cursor()
+    c.execute("SELECT opponent_id FROM match_points WHERE player_id = %s",
+        (player_id,))
+    opponents = c.fetchall()
+    db.close()
+    return [x[0] for x in opponents]
+
+
 def swiss_pairings():
     """Returns a list of pairs of players for the next round of a match.
 
@@ -122,7 +132,16 @@ def swiss_pairings():
             bye(player[0])
             continue
 
-        [player1, player2] = [standings.pop(0), standings.pop(0)]
+        player1 = standings.pop(0)
+        player2 = None
+        for i, (id, n, p, m, omw) in enumerate(standings):
+            if player1[0] not in player_opponents(id):
+                player2 = standings.pop(i)
+                break
+
+        if player2 == None:
+            player2 = standings.pop(0)
+
         [player1_id, player1_name, player2_id, player2_name] = [
             player1[0], player1[1], player2[0], player2[1]
         ]
