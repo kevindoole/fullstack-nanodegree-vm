@@ -216,7 +216,7 @@ def test_avoid_rematches():
 def test_multiple_tournaments():
     t1 = Tournament();
     t2 = Tournament();
-    if t1.id == t2.id:
+    if t1.tournament_id == t2.tournament_id:
         raise ValueError("Tournaments cannot have the same id.")
     t1.register_player("Dini Petty")
     t1.register_player("Yasmeen Bleeth")

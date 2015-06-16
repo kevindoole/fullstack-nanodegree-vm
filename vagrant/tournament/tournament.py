@@ -32,7 +32,9 @@ def count_players():
     db.close()
     return count[0]
 
-class Tournament:
+class Tournament(object):
+    """Keeps track of players, byes, matches and standings in order to generate
+    Swiss Pairings for a tournament."""
 
     def __init__(self):
         [db, c] = connect()
@@ -40,10 +42,11 @@ class Tournament:
         new_tournament_id = c.fetchone()[0]
         db.commit()
         db.close()
-        self.id = new_tournament_id
+        self.tournament_id = new_tournament_id
 
     def register_player(self, name):
         """Adds a player to the tournament database.
+
         Args:
           name: the player's full name (need not be unique).
         """
@@ -51,7 +54,7 @@ class Tournament:
         c.execute("INSERT INTO players (name) VALUES(%s) RETURNING id;", (name,))
         player_id = c.fetchone()[0]
         c.execute("""INSERT INTO players_tournaments (player_id, tournament_id)
-                        VALUES(%s,%s);""", (player_id,self.id))
+                        VALUES(%s,%s);""", (player_id, self.tournament_id))
         db.commit()
         db.close()
 
@@ -69,8 +72,7 @@ class Tournament:
             matches: the number of matches the player has played
         """
         [db, c] = connect()
-        c.execute("""SELECT * FROM standings WHERE tournament_id = %s""",
-            (self.id,))
+        c.execute("SELECT * FROM standings WHERE tournament_id = %s", (self.tournament_id,))
         standings = c.fetchall()
         db.close()
         return standings
@@ -91,27 +93,44 @@ class Tournament:
         else:
             [player1_points, player2_points] = [0, 3]
 
-        results = (player1_id, player1_points, player2_id, self.id, player2_id,
-                    player2_points, player1_id, self.id)
+        results = (player1_id, player1_points, player2_id, self.tournament_id, player2_id,
+                   player2_points, player1_id, self.tournament_id)
         commit_query("""INSERT INTO match_points (player_id, points, opponent_id,
             tournament_id) VALUES(%s, %s, %s, %s), (%s, %s, %s, %s);""", results)
 
     def which_player_can_bye(self, standings):
+        """Provides id for the lowest ranking player who has not yet had a bye.
+
+        Args:
+            standings: see player_standings()
+
+        Returns:
+            the index in standings representing the player who can bye"""
         [db, c] = connect()
-        c.execute("SELECT id FROM last_place_without_bye WHERE tournament_id = %s;", (self.id,))
+        c.execute("""SELECT id FROM last_place_without_bye
+            WHERE tournament_id = %s;""", (self.tournament_id,))
         bye_player = c.fetchone()
         db.close()
         bye_player_id = bye_player[0]
         i = 0
-        for i, (id, n, p, m, omw, t_id) in enumerate(standings):
-            if id == bye_player_id:
+        for i, (player_id, _, _, _, _, _) in enumerate(standings):
+            if player_id == bye_player_id:
                 return i
-            i+=1
+            i += 1
 
     def player_opponents(self, player_id):
+        """Collects a list of opponents player_id has played against in the
+        current tournament.
+
+        Args:
+            player_id: the id of the player of whom to find opponents
+
+        Returns:
+            list of player ids
+        """
         [db, c] = connect()
-        c.execute("SELECT opponent_id FROM match_points WHERE player_id = %s AND tournament_id = %s",
-            (player_id, self.id))
+        c.execute("""SELECT opponent_id FROM match_points WHERE player_id = %s
+            AND tournament_id = %s""", (player_id, self.tournament_id))
         opponents = c.fetchall()
         db.close()
         return [x[0] for x in opponents]
@@ -143,12 +162,14 @@ class Tournament:
 
             player1 = standings.pop(0)
             player2 = None
-            for i, (id, n, p, m, omw, t_id) in enumerate(standings):
-                if player1[0] not in self.player_opponents(id):
+            for i, (player_id, _, _, _, _, _) in enumerate(standings):
+                if player1[0] not in self.player_opponents(player_id):
                     player2 = standings.pop(i)
                     break
 
-            if player2 == None:
+            # If player2 is still None, we were not able to find an opponent
+            # that's not a rematch, so we make do with a rematch.
+            if not player2:
                 player2 = standings.pop(0)
 
             [player1_id, player1_name, player2_id, player2_name] = [
@@ -158,8 +179,12 @@ class Tournament:
         return pairings
 
     def bye(self, player_id):
+        """Records a bye for a player.
+
+        Args:
+            player_id: the id of the player who's getting a bye"""
         [db, c] = connect()
-        c.execute("INSERT INTO byes VALUES(%s, %s);", (player_id, self.id))
+        c.execute("INSERT INTO byes VALUES(%s, %s);", (player_id, self.tournament_id))
         c.execute("INSERT INTO match_points (player_id, points) VALUES(%s, %s);", (player_id, 3))
         db.commit()
         db.close()
