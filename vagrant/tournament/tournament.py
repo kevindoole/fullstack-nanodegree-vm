@@ -1,4 +1,5 @@
 """Implementation of a Swiss-system tournament."""
+# pylint: good-names=db,c
 
 import psycopg2
 
@@ -156,8 +157,8 @@ class Tournament(object):
         while len(standings):
             if len(standings) % 2 == 1:
                 bye_player_key = self.which_player_can_bye(standings)
-                player = standings.pop(bye_player_key)
-                self.bye(player[0])
+                player_id = standings.pop(bye_player_key)[0]
+                self.bye(player_id)
                 continue
 
             player1 = standings.pop(0)

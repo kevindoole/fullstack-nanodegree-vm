@@ -1,3 +1,8 @@
+"""Tests tournament module"""
+# pylint: disable=invalid-name
+# pylint: disable=missing-docstring
+# pylint: disable=wildcard-import
+
 from tournament import *
 
 tournament = Tournament()
@@ -11,7 +16,8 @@ def test_delete_matches():
     print "1. Old matches can be deleted."
 
 def register_players(count):
-    [tournament.register_player("player" + `i`) for i in range(count)]
+    for i in range(count):
+        tournament.register_player("player" + `i`)
 
 def test_delete():
     delete_matches_players()
@@ -64,7 +70,8 @@ def test_standings_before_matches():
         raise ValueError("Only registered players should appear in standings.")
     if len(standings[0]) != 6:
         raise ValueError("Each player_standings row should have six columns.")
-    [(id1, name1, wins1, matches1, omw1, t_id), (id2, name2, wins2, matches2, omw2, t_id)] = standings
+    [(_, name1, wins1, matches1, _, _),
+     (_, name2, wins2, matches2, _, _)] = standings
     if matches1 != 0 or matches2 != 0 or wins1 != 0 or wins2 != 0:
         raise ValueError(
             "Newly registered players should have no matches or wins.")
@@ -79,10 +86,10 @@ def test_report_matches():
     register_players(4)
     standings = tournament.player_standings()
     [id1, id2, id3, id4] = [row[0] for row in standings]
-    tournament.report_match((id1,1), (id2,0))
-    tournament.report_match((id3,1), (id4,1))
+    tournament.report_match((id1, 1), (id2, 0))
+    tournament.report_match((id3, 1), (id4, 1))
     standings = tournament.player_standings()
-    for (i, n, p, m, omw, t_id) in standings:
+    for (i, _, p, m, _, _) in standings:
         if m != 1:
             raise ValueError("Each player should have one match recorded.")
         if i == id1 and p != 3:
@@ -99,13 +106,13 @@ def test_pairings():
     register_players(4)
     standings = tournament.player_standings()
     [id1, id2, id3, id4] = [row[0] for row in standings]
-    tournament.report_match((id1,1), (id2,0))
-    tournament.report_match((id3,1), (id4,0))
+    tournament.report_match((id1, 1), (id2, 0))
+    tournament.report_match((id3, 1), (id4, 0))
     pairings = tournament.swiss_pairings()
     if len(pairings) != 2:
         raise ValueError(
             "For four players, swiss_pairings should return two pairs.")
-    [(pid1, pname1, pid2, pname2), (pid3, pname3, pid4, pname4)] = pairings
+    [(pid1, _, pid2, _), (pid3, _, pid4, _)] = pairings
     correct_pairs = set([frozenset([id1, id3]), frozenset([id2, id4])])
     actual_pairs = set([frozenset([pid1, pid2]), frozenset([pid3, pid4])])
     if correct_pairs != actual_pairs:
@@ -118,13 +125,13 @@ def test_byes():
     register_players(3)
     standings = tournament.player_standings()
     [id1, id2, id3] = [row[0] for row in standings]
-    tournament.report_match((id1,1), (id2,1))
+    tournament.report_match((id1, 1), (id2, 1))
     pairings = tournament.swiss_pairings()
     if len(pairings) != 1:
         raise ValueError(
             "There should only be pairings for an even number of players")
     standings = tournament.player_standings()
-    for (i, n, p, m, omw, t_id) in standings:
+    for (i, _, p, _, _, _) in standings:
         if i == id3 and p != 3:
             raise ValueError(
                 "The lowest rank player in round one should get a bye.")
@@ -141,10 +148,10 @@ def test_byes():
 def test_bye_fallback():
     standings = tournament.player_standings()
     [bye_player_id, id2, id3] = [row[0] for row in standings]
-    tournament.report_match((id2,2), (id3,1))
-    tournament.report_match((id2,1), (id3,2))
+    tournament.report_match((id2, 2), (id3, 1))
+    tournament.report_match((id2, 1), (id3, 2))
     pairings = tournament.swiss_pairings()
-    [(pid1, pname1, pid2, pname2)] = pairings
+    [(pid1, _, pid2, _)] = pairings
     if bye_player_id not in (pid1, pid2):
         raise ValueError("A player cannot have a bye twice.")
     print "10. No player can have more than one bye."
@@ -154,11 +161,11 @@ def test_opponent_match_wins_count():
     register_players(3)
     standings = tournament.player_standings()
     [id1, id2, id3] = [row[0] for row in standings]
-    tournament.report_match((id1,1), (id2,0))
-    tournament.report_match((id1,1), (id3,0))
-    tournament.report_match((id1,1), (id2,0))
+    tournament.report_match((id1, 1), (id2, 0))
+    tournament.report_match((id1, 1), (id3, 0))
+    tournament.report_match((id1, 1), (id2, 0))
     standings = tournament.player_standings()
-    for (i, n, p, m, omw, t_id) in standings:
+    for (i, _, _, _, omw, _) in standings:
         if i == id1 and omw != 0:
             raise ValueError("id1 should have 0 omw.")
         if i == id2 and omw != 3:
@@ -173,22 +180,22 @@ def test_opponent_match_wins_rank():
     standings = tournament.player_standings()
     [id1, id2, id3, id4, id5, id6] = [row[0] for row in standings]
 
-    tournament.report_match((id1,1), (id2,0))
-    tournament.report_match((id3,1), (id4,0))
-    tournament.report_match((id5,1), (id6,0))
+    tournament.report_match((id1, 1), (id2, 0))
+    tournament.report_match((id3, 1), (id4, 0))
+    tournament.report_match((id5, 1), (id6, 0))
 
     # Fudge the numbers a bit to get the pairings we need to test.
     commit_query("UPDATE match_points SET points = 0 WHERE player_id = %s",
-        query_params=(id3,))
+                 query_params=(id3,))
     commit_query("UPDATE match_points SET opponent_id = %s WHERE player_id in (%s,%s)",
-        query_params=(id6,id3,id4))
+                 query_params=(id6, id3, id4))
 
     pairings = tournament.swiss_pairings()
-    [(pid1, pname1, pid2, pname2),
-        (pid3, pname3, pid4, pname4),
-        (pid5, pname5, pid6, pname6)] = pairings
+    [(pid1, _, pid2, _),
+     (pid3, _, pid4, _),
+     (pid5, _, pid6, _)] = pairings
     correct_pairs = set([
-        frozenset([id1, id5]),frozenset([id2, id6]),frozenset([id3, id4])
+        frozenset([id1, id5]), frozenset([id2, id6]), frozenset([id3, id4])
     ])
     actual_pairs = set([
         frozenset([pid1, pid2]), frozenset([pid3, pid4]), frozenset([pid5, pid6]),
@@ -201,21 +208,21 @@ def test_opponent_match_wins_rank():
 def test_avoid_rematches():
     delete_matches_players()
     register_players(4)
-    [id1, id2, id3, id4] = [row[0] for row in tournament.player_standings()]
-    tournament.report_match((id1,1), (id2,0))
+    [id1, id2, _, _] = [row[0] for row in tournament.player_standings()]
+    tournament.report_match((id1, 1), (id2, 0))
     opponents = tournament.player_opponents(id1)
     if id2 not in opponents:
         raise ValueError("Opponents should be recorded.")
     pairings = tournament.swiss_pairings()
-    [(pid1, pname1, pid2, pname2),(pid3, pname3, pid4, pname4)] = pairings
+    [(pid1, _, pid2, _), (_, _, _, _)] = pairings
     if pid1 == id1 and pid2 == id2:
         raise ValueError(
             "Players should not play one another more than one time.")
     print "13. Rematches are avoided."
 
-def test_multiple_tournaments():
-    t1 = Tournament();
-    t2 = Tournament();
+def test_multi_trnmnt_standings():
+    t1 = Tournament()
+    t2 = Tournament()
     if t1.tournament_id == t2.tournament_id:
         raise ValueError("Tournaments cannot have the same id.")
     t1.register_player("Dini Petty")
@@ -237,11 +244,13 @@ def test_multiple_tournaments():
         raise ValueError("T2 does not have the correct players.")
     print "14. Multiple tournaments can have separate players."
 
-def test_multiple_tournaments_have_distinct_pairings():
-    t1 = Tournament();
-    t2 = Tournament();
-    [t1.register_player("player" + `i`) for i in range(8)]
-    [t2.register_player("player" + `i`) for i in range(16)]
+def test_multi_trnmnt_pairings():
+    t1 = Tournament()
+    t2 = Tournament()
+    for i in range(8):
+        t1.register_player("player" + `i`)
+    for i in range(16):
+        t2.register_player("player" + `i`)
     if len(t1.swiss_pairings()) != 4:
         raise ValueError("T1 should have 4 pairings.")
     if len(t2.swiss_pairings()) != 8:
@@ -262,8 +271,8 @@ if __name__ == '__main__':
     test_opponent_match_wins_count()
     test_opponent_match_wins_rank()
     test_avoid_rematches()
-    test_multiple_tournaments()
-    test_multiple_tournaments_have_distinct_pairings
+    test_multi_trnmnt_standings()
+    test_multi_trnmnt_pairings()
     print "Success!  All tests pass!"
 
 
