@@ -17,9 +17,9 @@ def commit_query(query, query_params=None):
     db.commit()
     db.close()
 
-def delete_match_points():
+def delete_player_points():
     """Remove all the match records from the database."""
-    commit_query("TRUNCATE TABLE match_points;")
+    commit_query("TRUNCATE TABLE player_points;")
 
 def delete_players():
     """Remove all the player records from the database."""
@@ -107,7 +107,7 @@ class Tournament(object):
 
         results = (player1_id, player1_points, player2_id, self.tournament_id, player2_id,
                    player2_points, player1_id, self.tournament_id)
-        commit_query("""INSERT INTO match_points (player_id, points, opponent_id,
+        commit_query("""INSERT INTO player_points (player_id, points, opponent_id,
             tournament_id) VALUES(%s, %s, %s, %s), (%s, %s, %s, %s);""", results)
 
     def which_player_can_bye(self, standings):
@@ -141,7 +141,7 @@ class Tournament(object):
             list of player ids
         """
         [db, c] = connect()
-        c.execute("""SELECT opponent_id FROM match_points WHERE player_id = %s
+        c.execute("""SELECT opponent_id FROM player_points WHERE player_id = %s
             AND tournament_id = %s""", (player_id, self.tournament_id))
         opponents = c.fetchall()
         db.close()
@@ -197,6 +197,6 @@ class Tournament(object):
             player_id: the id of the player who's getting a bye"""
         [db, c] = connect()
         c.execute("INSERT INTO byes VALUES(%s, %s);", (player_id, self.tournament_id))
-        c.execute("INSERT INTO match_points (player_id, points) VALUES(%s, %s);", (player_id, 3))
+        c.execute("INSERT INTO player_points (player_id, points) VALUES(%s, %s);", (player_id, 3))
         db.commit()
         db.close()

@@ -31,7 +31,7 @@ CREATE TABLE byes (
     PRIMARY KEY   (player_id, tournament_id)
 );
 
-CREATE TABLE match_points (
+CREATE TABLE player_points (
     id            SERIAL PRIMARY KEY,
     tournament_id INTEGER REFERENCES tournaments (id),
     player_id     INTEGER REFERENCES players (id),
@@ -40,16 +40,16 @@ CREATE TABLE match_points (
 );
 
 CREATE VIEW standings AS
-    SELECT p.id, p.name, COALESCE(sum(match_points.points),0) as points, count(match_points.player_id),
+    SELECT p.id, p.name, COALESCE(sum(player_points.points),0) as points, count(player_points.player_id),
         (
             SELECT count(player_id)
-                FROM match_points
+                FROM player_points
                 WHERE points = 3 AND player_id IN (
-                    SELECT opponent_id FROM match_points WHERE player_id = p.id
+                    SELECT opponent_id FROM player_points WHERE player_id = p.id
                 )
         ) AS omw, players_tournaments.tournament_id
     FROM players AS p
-    LEFT JOIN match_points ON p.id = match_points.player_id
+    LEFT JOIN player_points ON p.id = player_points.player_id
     LEFT JOIN players_tournaments ON p.id = players_tournaments.player_id
     GROUP BY players_tournaments.tournament_id, p.id
     ORDER BY points DESC, omw DESC;

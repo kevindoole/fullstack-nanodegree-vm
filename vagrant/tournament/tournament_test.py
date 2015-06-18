@@ -8,11 +8,11 @@ from tournament import *
 tournament = Tournament()
 
 def delete_matches_players():
-    delete_match_points()
+    delete_player_points()
     delete_players()
 
 def test_delete_matches():
-    delete_match_points()
+    delete_player_points()
     print "1. Old matches can be deleted."
 
 def register_players(count):
@@ -185,9 +185,9 @@ def test_opponent_match_wins_rank():
     tournament.report_match((id5, 1), (id6, 0))
 
     # Fudge the numbers a bit to get the pairings we need to test.
-    commit_query("UPDATE match_points SET points = 0 WHERE player_id = %s",
+    commit_query("UPDATE player_points SET points = 0 WHERE player_id = %s",
                  query_params=(id3,))
-    commit_query("UPDATE match_points SET opponent_id = %s WHERE player_id in (%s,%s)",
+    commit_query("UPDATE player_points SET opponent_id = %s WHERE player_id in (%s,%s)",
                  query_params=(id6, id3, id4))
 
     pairings = tournament.swiss_pairings()
