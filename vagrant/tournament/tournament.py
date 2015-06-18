@@ -45,15 +45,26 @@ class Tournament(object):
         db.close()
         self.tournament_id = new_tournament_id
 
-    def register_player(self, name):
+    def register_player(self, name_or_id):
         """Adds a player to the tournament database.
 
         Args:
-          name: the player's full name (need not be unique).
+          name_or_id: the player's full name (need not be unique), or an existing players.id
+          to reuse a player from an earlier tournament.
         """
         [db, c] = connect()
-        c.execute("INSERT INTO players (name) VALUES(%s) RETURNING id;", (name,))
-        player_id = c.fetchone()[0]
+
+        is_player_id = isinstance( name_or_id, int );
+        if ( is_player_id ):
+            player_id = name_or_id
+            c.execute("SELECT id FROM players WHERE id = %s", (player_id,))
+            if c.fetchone()[0] != player_id:
+                raise ValueError("Unknown player id")
+        else:
+            name = name_or_id
+            c.execute("INSERT INTO players (name) VALUES(%s) RETURNING id;", (name,))
+            player_id = c.fetchone()[0]
+
         c.execute("""INSERT INTO players_tournaments (player_id, tournament_id)
                         VALUES(%s,%s);""", (player_id, self.tournament_id))
         db.commit()

@@ -257,6 +257,28 @@ def test_multi_trnmnt_pairings():
         raise ValueError("T2 should have 8 pairings.")
     print "15. Multiple tournaments have distinct standings."
 
+def test_reuse_existing_player():
+    delete_matches_players()
+    tournament.register_player("Dini Petty")
+    tournament.register_player("Frank Sinatra")
+    t1_standings = tournament.player_standings()
+    id1 = t1_standings[0][0]
+    new_tournament = Tournament()
+    new_tournament.register_player(id1)
+    t2_standings = new_tournament.player_standings()
+    if len(t2_standings) is not 1:
+        raise ValueError("new_tournament should have a player.")
+    if t2_standings[0][0] != id1:
+        raise ValueError("The same player from the first tournament should be reused.")
+    try:
+        new_tournament.register_player(999999)
+    except Exception, e:
+        pass
+    else:
+        raise ValueError("Registering a player id that does not exist should raise an error.")
+    print "16. Players can be reused between tournaments."
+
+
 if __name__ == '__main__':
     test_delete_matches()
     test_delete()
@@ -273,6 +295,7 @@ if __name__ == '__main__':
     test_avoid_rematches()
     test_multi_trnmnt_standings()
     test_multi_trnmnt_pairings()
+    test_reuse_existing_player()
     print "Success!  All tests pass!"
 
 
