@@ -1,5 +1,4 @@
 """Implementation of a Swiss-system tournament."""
-# pylint: good-names=db,c
 
 import psycopg2
 
@@ -54,8 +53,8 @@ class Tournament(object):
         """
         [db, c] = connect()
 
-        is_player_id = isinstance( name_or_id, int );
-        if ( is_player_id ):
+        is_player_id = isinstance(name_or_id, int)
+        if is_player_id:
             player_id = name_or_id
             c.execute("SELECT id FROM players WHERE id = %s", (player_id,))
             if not c.fetchone():
