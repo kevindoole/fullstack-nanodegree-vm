@@ -30,7 +30,7 @@ you're ready and the results will be kept separate from other tournaments.
 - Players can be reused from one tournament to the next.
 
 ## Requirements
-Python, Postgresql, psycopg2 OR you can use the included Vagrant box (see below)
+Python, PostgreSQL, psycopg2 OR you can use the included Vagrant box (see below)
 
 ## Usage
 The basic workflow to running a tournament is:
@@ -59,7 +59,7 @@ Number of Players | Number of Rounds
 
 ## Development environment
 This package includes a [Vagrant](https://www.vagrantup.com/) development
-environment, in case you you don't have Python, Postgresql or psycopg2
+environment, in case you you don't have Python, PostgreSQL or psycopg2
 available. You must have installed Vagrant to use it.
 [Download a package for your OS](https://www.vagrantup.com/downloads.html).
 
