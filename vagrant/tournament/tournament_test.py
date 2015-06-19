@@ -192,8 +192,8 @@ def test_opponent_match_wins_rank():
     # id3 = 0/0, id4 = 0/0
     pairings = tournament.swiss_pairings()
     [(pid1, _, pid2, _), (pid3, _, pid4, _), (pid5, _, pid6, _)] = pairings
-    correct_pairs = set([frozenset([id1, id5]), frozenset([id2, id6]),frozenset([id3, id4])])
-    actual_pairs = set([frozenset([pid1, pid2]), frozenset([pid3, pid4]),frozenset([pid5, pid6])])
+    correct_pairs = set([frozenset([id1, id5]), frozenset([id2, id6]), frozenset([id3, id4])])
+    actual_pairs = set([frozenset([pid1, pid2]), frozenset([pid3, pid4]), frozenset([pid5, pid6])])
     if correct_pairs != actual_pairs:
         raise ValueError("Tied players should be ranked by opponent match wins.")
     print "12. Tied players should be ranked by opponent match wins."
