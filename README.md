@@ -34,19 +34,29 @@ Python, PostgreSQL, psycopg2 OR you can use the included Vagrant box (see below)
 
 ## Usage
 The basic workflow to running a tournament is:
-1. Create a tournament by creating an instance of the Tournament class:
-`tournament = Tournament()`
-2. Register players for you tournament: `tournament.register_player(name)`
-3. Get pairings: `tournament.swiss_pairings()`
-4. Have your players play their matches. Record the results:
+
 ```
+# Create a tournament
+tournament = Tournament()
+
+# Register players. Use a name to register a new player, or an ID
+# from a previous tournament to re-use an existing player.
+tournament.register_player(name_or_id = "Bryan Little")
+tournament.register_player(name_or_id = "Dustin Byfuglien")
+
+# Get player pairings
+print tournament.swiss_pairings()
+
+# Have your players play their matches and record the results
 player1 = (player1_id, player1_score)
 player2 = (player2_id, player2_score)
 tournament.report_match(player1, player2)
+
+# Once everyone's played, set up pairings for the next round
+print tournament.swiss_pairings()
 ```
-5. Once all your rounds have finished, execute `tournament.swiss_pairings()`
-again to determine matchups for the next round.
-6. Continue for the necessary number of rounds:
+
+Repeat these steps for the necessary number of rounds:
 
 Number of Players | Number of Rounds
 ----------------- | ----------------
