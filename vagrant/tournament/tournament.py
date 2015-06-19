@@ -58,7 +58,7 @@ class Tournament(object):
         if ( is_player_id ):
             player_id = name_or_id
             c.execute("SELECT id FROM players WHERE id = %s", (player_id,))
-            if c.fetchone()[0] != player_id:
+            if not c.fetchone():
                 raise ValueError("Unknown player id")
         else:
             name = name_or_id

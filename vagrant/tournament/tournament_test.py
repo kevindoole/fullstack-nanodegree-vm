@@ -128,13 +128,11 @@ def test_byes():
     tournament.report_match((id1, 1), (id2, 1))
     pairings = tournament.swiss_pairings()
     if len(pairings) != 1:
-        raise ValueError(
-            "There should only be pairings for an even number of players")
+        raise ValueError("There should only be pairings for an even number of players")
     standings = tournament.player_standings()
     for (i, _, p, _, _, _) in standings:
         if i == id3 and p != 3:
-            raise ValueError(
-                "The lowest rank player in round one should get a bye.")
+            raise ValueError("The lowest rank player in round one should get a bye.")
         if i in (id1, id2) and p != 1:
             raise ValueError("Tied players should have 1 point each")
     try:
@@ -179,7 +177,6 @@ def test_opponent_match_wins_rank():
     register_players(6)
     standings = tournament.player_standings()
     [id1, id2, id3, id4, id5, id6] = [row[0] for row in standings]
-
     tournament.report_match((id1, 1), (id2, 0))
     tournament.report_match((id3, 1), (id4, 0))
     tournament.report_match((id5, 1), (id6, 0))
@@ -189,20 +186,12 @@ def test_opponent_match_wins_rank():
                  query_params=(id3,))
     commit_query("UPDATE player_points SET opponent_id = %s WHERE player_id in (%s,%s)",
                  query_params=(id6, id3, id4))
-
     pairings = tournament.swiss_pairings()
-    [(pid1, _, pid2, _),
-     (pid3, _, pid4, _),
-     (pid5, _, pid6, _)] = pairings
-    correct_pairs = set([
-        frozenset([id1, id5]), frozenset([id2, id6]), frozenset([id3, id4])
-    ])
-    actual_pairs = set([
-        frozenset([pid1, pid2]), frozenset([pid3, pid4]), frozenset([pid5, pid6]),
-    ])
+    [(pid1, _, pid2, _), (pid3, _, pid4, _), (pid5, _, pid6, _)] = pairings
+    correct_pairs = set([frozenset([id1, id5]), frozenset([id2, id6]),frozenset([id3, id4])])
+    actual_pairs = set([frozenset([pid1, pid2]), frozenset([pid3, pid4]),frozenset([pid5, pid6])])
     if correct_pairs != actual_pairs:
-        raise ValueError(
-            "Tied players should be ranked by opponent match wins.")
+        raise ValueError("Tied players should be ranked by opponent match wins.")
     print "12. Tied players should be ranked by opponent match wins."
 
 def test_avoid_rematches():
@@ -272,7 +261,7 @@ def test_reuse_existing_player():
         raise ValueError("The same player from the first tournament should be reused.")
     try:
         new_tournament.register_player(999999)
-    except Exception, e:
+    except ValueError:
         pass
     else:
         raise ValueError("Registering a player id that does not exist should raise an error.")
