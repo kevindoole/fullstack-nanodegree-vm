@@ -9,6 +9,7 @@ def connect():
     cursor = db.cursor()
     return [db, cursor]
 
+
 def commit_query(query, query_params=None):
     """Connect to the DB and run a query."""
     [db, c] = connect()
@@ -16,23 +17,29 @@ def commit_query(query, query_params=None):
     db.commit()
     db.close()
 
+
 def delete_player_points():
     """Remove all the match records from the database."""
     commit_query("TRUNCATE TABLE player_points;")
+
 
 def delete_players():
     """Remove all the player records from the database."""
     commit_query("TRUNCATE TABLE players CASCADE;")
 
+
 def count_players():
-    """Returns the number of players currently registered for all tournaments."""
+    """Returns the number of players currently registered for all
+    tournaments."""
     [db, c] = connect()
     c.execute("SELECT count(*) FROM players;")
     count = c.fetchone()
     db.close()
     return count[0]
 
+
 class Tournament(object):
+
     """Keeps track of players, byes, matches and standings in order to generate
     Swiss Pairings for a tournament."""
 
@@ -61,11 +68,15 @@ class Tournament(object):
                 raise ValueError("Unknown player id")
         else:
             name = name_or_id
-            c.execute("INSERT INTO players (name) VALUES(%s) RETURNING id;", (name,))
+            query = "INSERT INTO players (name) VALUES(%s) RETURNING id;"
+            params = (name,)
+            c.execute(query, params)
             player_id = c.fetchone()[0]
 
-        c.execute("""INSERT INTO players_tournaments (player_id, tournament_id)
-                        VALUES(%s,%s);""", (player_id, self.tournament_id))
+        query = """INSERT INTO players_tournaments (player_id, tournament_id)
+                   VALUES(%s,%s);"""
+        params = (player_id, self.tournament_id)
+        c.execute(query, params)
         db.commit()
         db.close()
 
@@ -83,7 +94,9 @@ class Tournament(object):
             matches: the number of matches the player has played
         """
         [db, c] = connect()
-        c.execute("SELECT * FROM standings WHERE tournament_id = %s", (self.tournament_id,))
+        query = "SELECT * FROM standings WHERE tournament_id = %s"
+        params = (self.tournament_id,)
+        c.execute(query, params)
         standings = c.fetchall()
         db.close()
         return standings
@@ -104,10 +117,11 @@ class Tournament(object):
         else:
             [player1_points, player2_points] = [0, 3]
 
-        results = (player1_id, player1_points, player2_id, self.tournament_id, player2_id,
-                   player2_points, player1_id, self.tournament_id)
-        commit_query("""INSERT INTO player_points (player_id, points, opponent_id,
-            tournament_id) VALUES(%s, %s, %s, %s), (%s, %s, %s, %s);""", results)
+        results = (player1_id, player1_points, player2_id, self.tournament_id,
+                   player2_id, player2_points, player1_id, self.tournament_id)
+        query = """INSERT INTO player_points (player_id, points, opponent_id,
+                   tournament_id) VALUES(%s, %s, %s, %s), (%s, %s, %s, %s);"""
+        commit_query(query, results)
 
     def which_player_can_bye(self, standings):
         """Provides id for the lowest ranking player who has not yet had a bye.
@@ -118,8 +132,11 @@ class Tournament(object):
         Returns:
             the index in standings representing the player who can bye"""
         [db, c] = connect()
-        c.execute("""SELECT id FROM last_place_without_bye
-            WHERE tournament_id = %s;""", (self.tournament_id,))
+        query = """SELECT id
+                   FROM last_place_without_bye
+                   WHERE tournament_id = %s;"""
+        params = (self.tournament_id,)
+        c.execute(query, params)
         bye_player = c.fetchone()
         db.close()
         bye_player_id = bye_player[0]
@@ -140,12 +157,15 @@ class Tournament(object):
             list of player ids
         """
         [db, c] = connect()
-        c.execute("""SELECT opponent_id FROM player_points WHERE player_id = %s
-            AND tournament_id = %s""", (player_id, self.tournament_id))
+        query = """SELECT opponent_id
+                   FROM player_points
+                   WHERE player_id = %s
+                   AND tournament_id = %s"""
+        params = (player_id, self.tournament_id)
+        c.execute(query, params)
         opponents = c.fetchall()
         db.close()
         return [x[0] for x in opponents]
-
 
     def swiss_pairings(self):
         """Returns a list of pairs of players for the next round of a match.
@@ -186,7 +206,8 @@ class Tournament(object):
             [player1_id, player1_name, player2_id, player2_name] = [
                 player1[0], player1[1], player2[0], player2[1]
             ]
-            pairings.append((player1_id, player1_name, player2_id, player2_name))
+            pairings.append(
+                (player1_id, player1_name, player2_id, player2_name))
         return pairings
 
     def bye(self, player_id):
@@ -195,7 +216,12 @@ class Tournament(object):
         Args:
             player_id: the id of the player who's getting a bye"""
         [db, c] = connect()
-        c.execute("INSERT INTO byes VALUES(%s, %s);", (player_id, self.tournament_id))
-        c.execute("INSERT INTO player_points (player_id, points) VALUES(%s, %s);", (player_id, 3))
+        query = "INSERT INTO byes VALUES(%s, %s);"
+        params = (player_id, self.tournament_id)
+        c.execute(query, params)
+
+        query = "INSERT INTO player_points (player_id, points) VALUES(%s, %s);"
+        params = (player_id, 3)
+        c.execute(query, params)
         db.commit()
         db.close()
