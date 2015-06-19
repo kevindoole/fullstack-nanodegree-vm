@@ -47,6 +47,7 @@ tournament.report_match(player1, player2)
 5. Once all your rounds have finished, execute `tournament.swiss_pairings()`
 again to determine matchups for the next round.
 6. Continue for the necessary number of rounds:
+
 Number of Players | Number of Rounds
 ----------------- | ----------------
 17–32 players     | 5 rounds of Swiss
