@@ -8,14 +8,17 @@ from tournament import *
 tournament = Tournament()
 
 def delete_matches_players():
+    "Truncates players and player_points tables"
     delete_player_points()
     delete_players()
 
 def test_delete_matches():
+    "Truncates player_points table"
     delete_player_points()
     print "1. Old matches can be deleted."
 
 def register_players(count):
+    "Registers `count` players in the global tournament"
     for i in range(count):
         tournament.register_player("player" + `i`)
 
@@ -70,8 +73,7 @@ def test_standings_before_matches():
         raise ValueError("Only registered players should appear in standings.")
     if len(standings[0]) != 6:
         raise ValueError("Each player_standings row should have six columns.")
-    [(_, name1, wins1, matches1, _, _),
-     (_, name2, wins2, matches2, _, _)] = standings
+    [(_, name1, wins1, matches1, _, _), (_, name2, wins2, matches2, _, _)] = standings
     if matches1 != 0 or matches2 != 0 or wins1 != 0 or wins2 != 0:
         raise ValueError(
             "Newly registered players should have no matches or wins.")
@@ -94,7 +96,7 @@ def test_report_matches():
             raise ValueError("Each player should have one match recorded.")
         if i == id1 and p != 3:
             raise ValueError("Each match winner should have three points recorded.")
-        if i == id2 and p != 0:
+        elif i == id2 and p != 0:
             raise ValueError("Each match loser should have zero points recorded.")
         elif i in (id3, id4) and p != 1:
             raise ValueError("Each draw player should have one point recorded.")
@@ -110,14 +112,12 @@ def test_pairings():
     tournament.report_match((id3, 1), (id4, 0))
     pairings = tournament.swiss_pairings()
     if len(pairings) != 2:
-        raise ValueError(
-            "For four players, swiss_pairings should return two pairs.")
+        raise ValueError("For four players, swiss_pairings should return two pairs.")
     [(pid1, _, pid2, _), (pid3, _, pid4, _)] = pairings
     correct_pairs = set([frozenset([id1, id3]), frozenset([id2, id4])])
     actual_pairs = set([frozenset([pid1, pid2]), frozenset([pid3, pid4])])
     if correct_pairs != actual_pairs:
-        raise ValueError(
-            "After one match, players with one win should be paired.")
+        raise ValueError("After one match, players with one win should be paired.")
     print "8. After one match, players with one win are paired."
 
 def test_byes():
@@ -132,22 +132,23 @@ def test_byes():
     standings = tournament.player_standings()
     for (i, _, p, _, _, _) in standings:
         if i == id3 and p != 3:
-            raise ValueError("The lowest rank player in round one should get a bye.")
-        if i in (id1, id2) and p != 1:
-            raise ValueError("Tied players should have 1 point each")
+            raise ValueError("The lowest rank player in round one should get a bye for 3 points.")
     try:
         tournament.bye(id3)
     except psycopg2.IntegrityError:
         pass
     else:
-        raise ValueError("Players should be able to have more than one bye.")
-    print "9. The lowest ranked player gets a bye for 3 points."
+        raise ValueError("Players should not be able to have more than one bye.")
+    print "9. A lowest ranked player can get a bye for 3 points once per tournament."
 
 def test_bye_fallback():
+    # Continues from the previous test.
     standings = tournament.player_standings()
+    # The first ranked player had a bye.
     [bye_player_id, id2, id3] = [row[0] for row in standings]
     tournament.report_match((id2, 2), (id3, 1))
     tournament.report_match((id2, 1), (id3, 2))
+    # Bye player is in last place again.
     pairings = tournament.swiss_pairings()
     [(pid1, _, pid2, _)] = pairings
     if bye_player_id not in (pid1, pid2):
@@ -181,11 +182,14 @@ def test_opponent_match_wins_rank():
     tournament.report_match((id3, 1), (id4, 0))
     tournament.report_match((id5, 1), (id6, 0))
 
-    # Fudge the numbers a bit to get the pairings we need to test.
+    # Fudge the numbers a bit to get the specific pairings we need to test.
     commit_query("UPDATE player_points SET points = 0 WHERE player_id = %s",
                  query_params=(id3,))
     commit_query("UPDATE player_points SET opponent_id = %s WHERE player_id in (%s,%s)",
                  query_params=(id6, id3, id4))
+    # id1 = 3p/0omw, id5 = 3/0
+    # id2 = 0/1, id6 = 0/1
+    # id3 = 0/0, id4 = 0/0
     pairings = tournament.swiss_pairings()
     [(pid1, _, pid2, _), (pid3, _, pid4, _), (pid5, _, pid6, _)] = pairings
     correct_pairs = set([frozenset([id1, id5]), frozenset([id2, id6]),frozenset([id3, id4])])
@@ -197,7 +201,7 @@ def test_opponent_match_wins_rank():
 def test_avoid_rematches():
     delete_matches_players()
     register_players(4)
-    [id1, id2, _, _] = [row[0] for row in tournament.player_standings()]
+    [id1, id2, id3, _] = [row[0] for row in tournament.player_standings()]
     tournament.report_match((id1, 1), (id2, 0))
     opponents = tournament.player_opponents(id1)
     if id2 not in opponents:
@@ -205,31 +209,25 @@ def test_avoid_rematches():
     pairings = tournament.swiss_pairings()
     [(pid1, _, pid2, _), (_, _, _, _)] = pairings
     if pid1 == id1 and pid2 == id2:
-        raise ValueError(
-            "Players should not play one another more than one time.")
+        raise ValueError("Players should not rematch.")
+    if pid2 != id3:
+        raise ValueError("When avoiding rematches, closely ranked players should swap places")
     print "13. Rematches are avoided."
 
 def test_multi_trnmnt_standings():
     t1 = Tournament()
     t2 = Tournament()
     if t1.tournament_id == t2.tournament_id:
-        raise ValueError("Tournaments cannot have the same id.")
+        raise ValueError("New tournament instances should have a unique ID.")
     t1.register_player("Dini Petty")
     t1.register_player("Yasmeen Bleeth")
     t2.register_player("Burt Reynolds")
     t2.register_player("Ralph Nader")
-    t1_standings = t1.player_standings()
-    t2_standings = t2.player_standings()
-    if len(t1_standings) != 2:
-        raise ValueError("There should be 2 players in t1.")
-    if len(t2_standings) != 2:
-        raise ValueError("There should be 2 players in t2.")
-    # for (i, n, p, m, omw, t_id) in standings:
-    t1_names = [row[1] for row in t1_standings]
-    t2_names = [row[1] for row in t2_standings]
-    if "Dini Petty" not in t1_names or "Yasmeen Bleeth" not in t1_names:
+    t1_names = [row[1] for row in t1.player_standings()]
+    t2_names = [row[1] for row in t2.player_standings()]
+    if sorted(['Yasmeen Bleeth', 'Dini Petty']) != sorted(t1_names):
         raise ValueError("T1 does not have the correct players.")
-    if "Burt Reynolds" not in t2_names or "Ralph Nader" not in t2_names:
+    if sorted(['Ralph Nader', 'Burt Reynolds']) != sorted(t2_names):
         raise ValueError("T2 does not have the correct players.")
     print "14. Multiple tournaments can have separate players."
 
@@ -255,9 +253,7 @@ def test_reuse_existing_player():
     new_tournament = Tournament()
     new_tournament.register_player(id1)
     t2_standings = new_tournament.player_standings()
-    if len(t2_standings) is not 1:
-        raise ValueError("new_tournament should have a player.")
-    if t2_standings[0][0] != id1:
+    if len(t2_standings) is not 1 or t2_standings[0][0] != id1:
         raise ValueError("The same player from the first tournament should be reused.")
     try:
         new_tournament.register_player(999999)
