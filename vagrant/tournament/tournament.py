@@ -50,6 +50,7 @@ class Tournament(object):
         db.commit()
         db.close()
         self.tournament_id = new_tournament_id
+        self.byes = []
 
     def register_player(self, name_or_id):
         """Adds a player to the tournament database.
@@ -123,7 +124,7 @@ class Tournament(object):
                    tournament_id) VALUES(%s, %s, %s, %s), (%s, %s, %s, %s);"""
         commit_query(query, results)
 
-    def which_player_can_bye(self, standings):
+    def remove_bye_player(self, standings):
         """Provides id for the lowest ranking player who has not yet had a bye.
 
         Args:
@@ -131,20 +132,26 @@ class Tournament(object):
 
         Returns:
             the index in standings representing the player who can bye"""
+
+        for player in reversed(standings):
+            if player[0] not in self.byes:
+                standings.remove(player)
+                self.report_bye(player[0])
+                break
+        return standings
+
+    def report_bye(self, player_id):
+        """Records a bye for a player.
+
+        Args:
+            player_id: the id of the player who's getting a bye"""
+        self.byes.append(player_id)
         [db, c] = connect()
-        query = """SELECT id
-                   FROM last_place_without_bye
-                   WHERE tournament_id = %s;"""
-        params = (self.tournament_id,)
+        query = "INSERT INTO player_points (player_id, points) VALUES(%s, %s);"
+        params = (player_id, 3)
         c.execute(query, params)
-        bye_player = c.fetchone()
+        db.commit()
         db.close()
-        bye_player_id = bye_player[0]
-        i = 0
-        for i, (player_id, _, _, _, _, _) in enumerate(standings):
-            if player_id == bye_player_id:
-                return i
-            i += 1
 
     def player_opponents(self, player_id):
         """Collects a list of opponents player_id has played against in the
@@ -184,13 +191,13 @@ class Tournament(object):
         """
         standings = self.player_standings()
         pairings = []
-        while len(standings):
-            if len(standings) % 2 == 1:
-                bye_player_key = self.which_player_can_bye(standings)
-                player_id = standings.pop(bye_player_key)[0]
-                self.bye(player_id)
-                continue
+        pair_size = 2
+        pairs = zip(*[iter(standings)]*pair_size)
 
+        if len(standings) % 2 == 1:
+            standings = self.remove_bye_player(standings)
+
+        while len(standings):
             player1 = standings.pop(0)
             player2 = None
             for i, (player_id, _, _, _, _, _) in enumerate(standings):
@@ -209,19 +216,3 @@ class Tournament(object):
             pairings.append(
                 (player1_id, player1_name, player2_id, player2_name))
         return pairings
-
-    def bye(self, player_id):
-        """Records a bye for a player.
-
-        Args:
-            player_id: the id of the player who's getting a bye"""
-        [db, c] = connect()
-        query = "INSERT INTO byes VALUES(%s, %s);"
-        params = (player_id, self.tournament_id)
-        c.execute(query, params)
-
-        query = "INSERT INTO player_points (player_id, points) VALUES(%s, %s);"
-        params = (player_id, 3)
-        c.execute(query, params)
-        db.commit()
-        db.close()

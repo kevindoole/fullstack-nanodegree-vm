@@ -146,13 +146,6 @@ def test_byes():
         if i == id3 and p != 3:
             raise ValueError("The lowest rank player in round one should get "
                              "a bye for 3 points.")
-    try:
-        tournament.bye(id3)
-    except psycopg2.IntegrityError:
-        pass
-    else:
-        raise ValueError(
-            "Players should not be able to have more than one bye.")
     print "9. A lowest ranked player gets a bye for 3 points only once."
 
 
@@ -167,7 +160,8 @@ def test_bye_fallback():
     pairings = tournament.swiss_pairings()
     [(pid1, _, pid2, _)] = pairings
     if bye_player_id not in (pid1, pid2):
-        raise ValueError("A player cannot have a bye twice.")
+        raise ValueError(
+            "Another player should get a bye before anyone repeats.")
     print "10. No player can have more than one bye."
 
 
