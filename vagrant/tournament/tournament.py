@@ -153,27 +153,6 @@ class Tournament(object):
         db.commit()
         db.close()
 
-    def player_opponents(self, player_id):
-        """Collects a list of opponents player_id has played against in the
-        current tournament.
-
-        Args:
-            player_id: the id of the player of whom to find opponents
-
-        Returns:
-            list of player ids
-        """
-        [db, c] = connect()
-        query = """SELECT opponent_id
-                   FROM player_points
-                   WHERE player_id = %s
-                   AND tournament_id = %s"""
-        params = (player_id, self.tournament_id)
-        c.execute(query, params)
-        opponents = c.fetchall()
-        db.close()
-        return [x[0] for x in opponents]
-
     def swiss_pairings(self):
         """Returns a list of pairs of players for the next round of a match.
 
@@ -192,7 +171,6 @@ class Tournament(object):
         standings = self.player_standings()
         pairings = []
         pair_size = 2
-        pairs = zip(*[iter(standings)]*pair_size)
 
         if len(standings) % 2 == 1:
             standings = self.remove_bye_player(standings)
@@ -200,8 +178,8 @@ class Tournament(object):
         while len(standings):
             player1 = standings.pop(0)
             player2 = None
-            for i, (player_id, _, _, _, _, _) in enumerate(standings):
-                if player1[0] not in self.player_opponents(player_id):
+            for i, (player_id, _, _, _, _, _, opps) in enumerate(standings):
+                if player1[0] not in opps:
                     player2 = standings.pop(i)
                     break
 

@@ -75,10 +75,10 @@ def test_standings_before_matches():
                          "before they have played any matches.")
     elif len(standings) > 2:
         raise ValueError("Only registered players should appear in standings.")
-    if len(standings[0]) != 6:
-        raise ValueError("Each player_standings row should have six columns.")
-    [(_, name1, wins1, matches1, _, _),
-     (_, name2, wins2, matches2, _, _)] = standings
+    if len(standings[0]) != 7:
+        raise ValueError("Each player_standings row should have seven columns.")
+    [(_, name1, wins1, matches1, _, _, _),
+     (_, name2, wins2, matches2, _, _, _)] = standings
     if matches1 != 0 or matches2 != 0 or wins1 != 0 or wins2 != 0:
         raise ValueError(
             "Newly registered players should have no matches or wins.")
@@ -96,7 +96,7 @@ def test_report_matches():
     tournament.report_match((id1, 1), (id2, 0))
     tournament.report_match((id3, 1), (id4, 1))
     standings = tournament.player_standings()
-    for (i, _, p, m, _, _) in standings:
+    for (i, _, p, m, _, _, _) in standings:
         if m != 1:
             raise ValueError("Each player should have one match recorded.")
         if i == id1 and p != 3:
@@ -142,7 +142,7 @@ def test_byes():
         raise ValueError(
             "There should only be pairings for an even number of players")
     standings = tournament.player_standings()
-    for (i, _, p, _, _, _) in standings:
+    for (i, _, p, _, _, _, _) in standings:
         if i == id3 and p != 3:
             raise ValueError("The lowest rank player in round one should get "
                              "a bye for 3 points.")
@@ -174,7 +174,7 @@ def test_opponent_match_wins_count():
     tournament.report_match((id1, 1), (id3, 0))
     tournament.report_match((id1, 1), (id2, 0))
     standings = tournament.player_standings()
-    for (i, _, _, _, omw, _) in standings:
+    for (i, _, _, _, omw, _, _) in standings:
         if i == id1 and omw != 0:
             raise ValueError("id1 should have 0 omw.")
         if i == id2 and omw != 3:
@@ -224,9 +224,10 @@ def test_avoid_rematches():
     register_players(4)
     [id1, id2, id3, _] = [row[0] for row in tournament.player_standings()]
     tournament.report_match((id1, 1), (id2, 0))
-    opponents = tournament.player_opponents(id1)
-    if id2 not in opponents:
-        raise ValueError("Opponents should be recorded.")
+    standings = tournament.player_standings()
+    for (i, _, _, _, omw, _, opps) in standings:
+        if id1 == i and id2 not in opps:
+            raise ValueError("Opponents should be recorded.")
     pairings = tournament.swiss_pairings()
     [(pid1, _, pid2, _), (_, _, _, _)] = pairings
     if pid1 == id1 and pid2 == id2:

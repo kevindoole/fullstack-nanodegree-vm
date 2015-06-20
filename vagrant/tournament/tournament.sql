@@ -37,11 +37,10 @@ CREATE VIEW standings AS
     SELECT p.id, p.name, COALESCE(sum(player_points.points),0) as points, count(player_points.player_id),
         (
             SELECT count(player_id)
-                FROM player_points
-                WHERE points = 3 AND player_id IN (
-                    SELECT opponent_id FROM player_points WHERE player_id = p.id
-                )
-        ) AS omw, players_tournaments.tournament_id
+            FROM player_points
+            WHERE points = 3 AND player_id IN (SELECT opponent_id FROM player_points WHERE player_id = p.id)
+        ) AS omw, players_tournaments.tournament_id,
+        array(SELECT opponent_id FROM player_points WHERE player_id = p.id) as opponents
     FROM players AS p
     LEFT JOIN player_points ON p.id = player_points.player_id
     LEFT JOIN players_tournaments ON p.id = players_tournaments.player_id
