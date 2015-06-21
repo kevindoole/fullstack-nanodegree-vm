@@ -188,9 +188,5 @@ class Tournament(object):
             if not player2:
                 player2 = standings.pop(0)
 
-            [player1_id, player1_name, player2_id, player2_name] = [
-                player1[0], player1[1], player2[0], player2[1]
-            ]
-            pairings.append(
-                (player1_id, player1_name, player2_id, player2_name))
+            pairings.append((player1[0], player1[1], player2[0], player2[1]))
         return pairings
