@@ -76,7 +76,8 @@ def test_standings_before_matches():
     elif len(standings) > 2:
         raise ValueError("Only registered players should appear in standings.")
     if len(standings[0]) != 7:
-        raise ValueError("Each player_standings row should have seven columns.")
+        raise ValueError(
+            "Each player_standings row should have seven columns.")
     [(_, name1, wins1, matches1, _, _, _),
      (_, name2, wins2, matches2, _, _, _)] = standings
     if matches1 != 0 or matches2 != 0 or wins1 != 0 or wins2 != 0:
